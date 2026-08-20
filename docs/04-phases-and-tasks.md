@@ -227,13 +227,58 @@ Exit criteria: ✅ 20 adversarial API checks + 4 UI tests; 86 E2E total.
 
 ## PHASE 7 — Partner activity
 
-**Status: [ ] pending**
+**Status: [x] COMPLETE**
+
+### The security problem this phase turned on
+
+RLS grants a partner the `attendance_events` row when `share_attendance` is
+on. But **latitude and longitude are columns on that same row.** A row policy
+is all-or-nothing: grant the row and the coordinates come with it.
+
+So a partner meant to see only *"checked in at 9:12 am"* could read exactly
+where from — with the location switch off. Column-level privileges cannot
+express it either, because the answer depends on a per-pair setting rather
+than on the role.
+
+**Fix, in two steps:**
+
+1. Migration 0014 — partner reads go through SECURITY DEFINER functions that
+   null every location field unless `can_view_shared(owner, 'location')`.
+2. Migration 0015 — **removed the partner's direct read policy entirely.**
+
+Step 2 mattered. After 0014 the functions were correct but the row policies
+were still there, so a partner could skip the app and read the table with
+their own token:
+
+```
+GET /rest/v1/attendance_events?select=latitude,longitude&user_id=eq.<them>
+```
+
+A privacy control that only holds while you use the intended screen is not a
+control. Anyone who opened devtools could bypass the switch. The functions
+are SECURITY DEFINER so they never needed those policies; what changed is
+that there is no longer a second route.
+
+### Other decisions
+
+- **A place name is a location.** "Janakpuri, Delhi" tells you as much as
+  coordinates, so it sits behind the same switch.
+- **Rejected submissions are never shown.** An attempt that did not count is
+  not activity; it stays between its author and an admin.
+- The empty state distinguishes *"they don't share this"* from *"nothing
+  happened"* — two very different things, and silence implies the second.
+- Nothing on this screen is live. Every pin is a place a capture already
+  happened; LoveTrack does not track anyone.
 
 Tasks:
-- [ ] Partner dashboard UI — today's attendance state (checked in / lunch / checked out)
-- [ ] Event timeline — har event ka time + captured location (consent-gated)
-- [ ] Leaflet + OpenStreetMap — **static pins for past events**, koi live moving marker nahi
-- [ ] Refresh on page load / manual pull-to-refresh — **no location polling**
+- [x] Partner dashboard UI — today's attendance state (checked in / lunch / checked out)
+- [x] Event timeline — har event ka time + captured location (consent-gated)
+- [x] Leaflet + OpenStreetMap — **static pins for past events**, koi live moving marker nahi
+- [x] Refresh on page load — **no location polling**
+- [x] Per-partner history page at `/app/partner/[partnerId]`
+- [x] Today's leave surfaced, so a quiet day reads as "on leave" not "nothing happened"
+
+Exit criteria: ✅ 22 adversarial API checks + 5 UI tests; 91 E2E total.
 
 > **Scope guard:** ye "partner kahan hai abhi" wala feature **nahi** hai. Ye "partner ne kab aur kahan se attendance mark ki" wala feature hai. Detail: [03-security-anti-fraud.md](./03-security-anti-fraud.md) section "Live location — build hi nahi karni".
 

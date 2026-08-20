@@ -271,6 +271,18 @@ export type Database = {
         Args: { p_event_type: AttendanceEventType };
         Returns: string;
       };
+      get_partner_permissions: {
+        Args: { p_partner_id: string };
+        Returns: unknown;
+      };
+      get_partner_days: {
+        Args: { p_partner_id: string; p_limit?: number };
+        Returns: unknown[];
+      };
+      get_partner_events: {
+        Args: { p_partner_id: string; p_from_date?: string | null };
+        Returns: unknown[];
+      };
       users_due_for_reminder: {
         Args: Record<string, never>;
         Returns: {
