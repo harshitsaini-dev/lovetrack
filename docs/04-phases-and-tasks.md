@@ -93,7 +93,7 @@ Tasks:
 - [ ] Admin approval flow (configurable on/off)
 - [ ] Resend setup (manual action — API key, domain)
 - [ ] Email templates (welcome, check-in, lunch, check-out, leave states, reminder, suspicious)
-- [ ] Cloudflare Cron trigger — missing-attendance reminder
+- [ ] Cloudflare Cron trigger — har ~15 min chale, aur har user ke **apne** `reminder_time` (unke timezone me) ke hisaab se email bheje. Koi global reminder time nahi.
 - [ ] `email_logs` dedup logic (no duplicate reminders)
 
 Exit criteria: leave submit → email sent; missing-attendance cron sends reminder once/day only.
@@ -103,12 +103,14 @@ Exit criteria: leave submit → email sent; missing-attendance cron sends remind
 **Status: [ ] pending**
 
 Tasks:
-- [ ] Partner dashboard UI (active/inactive, check-in/out, lunch state)
-- [ ] Latest-location display (consent-gated)
-- [ ] Leaflet + OpenStreetMap integration
-- [ ] Poll-based refresh (15-30s) or Supabase Realtime if simple
+- [ ] Partner dashboard UI — today's attendance state (checked in / lunch / checked out)
+- [ ] Event timeline — har event ka time + captured location (consent-gated)
+- [ ] Leaflet + OpenStreetMap — **static pins for past events**, koi live moving marker nahi
+- [ ] Refresh on page load / manual pull-to-refresh — **no location polling**
 
-Exit criteria: partner sees only explicitly-shared data, "last updated Xs ago" accurate.
+> **Scope guard:** ye "partner kahan hai abhi" wala feature **nahi** hai. Ye "partner ne kab aur kahan se attendance mark ki" wala feature hai. Detail: [03-security-anti-fraud.md](./03-security-anti-fraud.md) section "Live location — build hi nahi karni".
+
+Exit criteria: partner sees only explicitly-shared data — event history with per-event locations, **no live position**.
 
 ## PHASE 8 — Admin
 

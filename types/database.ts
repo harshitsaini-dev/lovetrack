@@ -25,6 +25,8 @@ export type Profile = {
   notify_check_out: boolean;
   notify_leave: boolean;
   notify_reminder: boolean;
+  /** Local "HH:MM:SS" for the daily reminder, read in `timezone`. */
+  reminder_time: string;
   timezone: string;
   created_at: string;
   updated_at: string;
@@ -41,6 +43,7 @@ export type ProfileUpdate = Partial<
     | "notify_check_out"
     | "notify_leave"
     | "notify_reminder"
+    | "reminder_time"
     | "timezone"
   >
 >;

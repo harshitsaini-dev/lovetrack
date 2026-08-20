@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
-import { Heart, LogOut, Moon, Shield, Sun, User } from "lucide-react";
+import { Heart, LogOut, Shield, User } from "lucide-react";
 
 import { isActivePath, NAV_ITEMS } from "@/components/layout/nav-items";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -32,7 +32,6 @@ function initials(profile: Profile): string {
 }
 
 export function AppHeader({ profile }: { profile: Profile }) {
-  const { setTheme } = useTheme();
   const pathname = usePathname();
 
   return (
@@ -74,26 +73,7 @@ export function AppHeader({ profile }: { profile: Profile }) {
         </nav>
 
         <div className="flex items-center gap-1">
-          {/*
-            The icon is swapped with CSS rather than state, so it is correct
-            on the very first paint — no hydration mismatch, no flash.
-          */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="touch-target"
-            onClick={() =>
-              setTheme(
-                document.documentElement.classList.contains("dark")
-                  ? "light"
-                  : "dark",
-              )
-            }
-            aria-label="Theme badlein"
-          >
-            <Moon className="size-4 dark:hidden" aria-hidden />
-            <Sun className="hidden size-4 dark:block" aria-hidden />
-          </Button>
+          <ThemeToggle />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

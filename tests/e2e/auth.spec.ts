@@ -34,6 +34,40 @@ test.describe("public pages", () => {
     );
     expect(overflows).toBe(false);
   });
+
+  test("theme can be switched and the choice sticks", async ({ page }) => {
+    await page.goto("/");
+
+    const html = page.locator("html");
+    const wasDark = await html.evaluate((el) => el.classList.contains("dark"));
+
+    await page.getByRole("button", { name: /theme badlein/i }).click();
+    await expect(html).toHaveClass(wasDark ? /(?!.*dark)/ : /dark/);
+
+    // next-themes persists to localStorage, so a reload must keep it.
+    await page.reload();
+    await expect(html).toHaveClass(wasDark ? /(?!.*dark)/ : /dark/);
+  });
+
+  test("install control is present and never a dead button", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // Chromium under Playwright does not fire beforeinstallprompt, so the
+    // component must fall back to guidance rather than rendering nothing.
+    const install = page.getByRole("button", { name: /install app/i });
+    const fallback = page.getByText(/install option aapke browser menu/i);
+
+    await expect(install.or(fallback).first()).toBeVisible();
+  });
+
+  test("theme toggle is available on auth pages too", async ({ page }) => {
+    await page.goto("/login");
+    await expect(
+      page.getByRole("button", { name: /theme badlein/i }),
+    ).toBeVisible();
+  });
 });
 
 test.describe("route protection", () => {

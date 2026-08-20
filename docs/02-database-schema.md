@@ -110,6 +110,14 @@ reviewed_by
 reviewed_at
 ```
 
+### Reminder time — **per-user, not global**
+
+`profiles.reminder_time` (`time`, default `20:30`) har user apne **Settings panel** se set karta hai. Ye env variable **nahi** hai.
+
+- Value user ke apne `profiles.timezone` me interpret hoti hai — `20:30` ka matlab "wahan ka 20:30", UTC nahi.
+- Cron har thodi der (jaise har 15 min) chalta hai aur jinka local reminder time abhi guzra hai unhe email karta hai — ek fixed server-wide time par nahi chalta.
+- Partial index `profiles_reminder_time_idx` sirf un rows par hai jinka `notify_reminder = true`.
+
 ### `notifications` / `email_logs`
 
 User-facing notifications aur email delivery tracking — duplicate reminders avoid karne ke liye log check hota hai.

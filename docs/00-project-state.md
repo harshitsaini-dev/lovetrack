@@ -66,7 +66,10 @@ lovetrack/
 
 1. **Mobile-first** — har screen pehle 360-430px ke liye design hogi (user requirement, 20 Aug 2026)
 2. **No geofence** — check-in kahin se bhi ho sakta hai; validation sirf "location genuine + accurate hai ya nahi" par hai (user requirement, 20 Aug 2026)
-3. **GitHub repo private** (user requirement, 20 Aug 2026)
+3. **No live location** — location sirf check-in/check-out/lunch ke exact moment par ek baar capture hoti hai. Continuous sharing, `watchPosition`, background tracking, aur "partner abhi kahan hai" — sab explicitly out of scope (user requirement, 20 Aug 2026)
+4. **GitHub repo private** (user requirement, 20 Aug 2026)
+5. **No AI attribution** — commits/PRs me `Co-Authored-By` ya "Generated with..." kabhi nahi (user requirement, 20 Aug 2026)
+6. **Playwright headed by default** — local test runs me browser window dikhe, slow-mo ke saath; CI me headless (user requirement, 20 Aug 2026)
 
 ## Ab tak kya decide ho chuka hai (spec se)
 

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Camera, Heart, MapPin, ShieldCheck } from "lucide-react";
 
+import { InstallButton } from "@/components/layout/install-button";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 const features = [
@@ -24,7 +26,11 @@ const features = [
 export default function LandingPage() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 pt-safe pb-safe sm:max-w-2xl">
-      <section className="flex flex-col items-center gap-4 pt-14 text-center sm:pt-20">
+      <div className="flex justify-end pt-3">
+        <ThemeToggle />
+      </div>
+
+      <section className="flex flex-col items-center gap-4 pt-8 text-center sm:pt-12">
         <span className="inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
           <Heart className="size-3.5" aria-hidden />
           Consent-based, never hidden
@@ -46,11 +52,13 @@ export default function LandingPage() {
           <Button
             asChild
             size="lg"
-            variant="outline"
+            variant="ghost"
             className="touch-target w-full"
           >
             <Link href="/login">I already have an account</Link>
           </Button>
+
+          <InstallButton className="w-full" />
         </div>
       </section>
 

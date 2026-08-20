@@ -103,19 +103,23 @@ User clicks "Verify & Check In"
 10. Email sent via Resend (if user enabled check-in emails)
         │
         ▼
-11. Partner dashboard reflects new state (poll or Supabase Realtime)
+11. Partner dashboard shows the new event next time it loads
 ```
+
+> Step 2/4 me location **ek hi baar** li jaati hai — is button press ke liye.
+> Uske baad app location access nahi karta. Koi `watchPosition`, koi polling.
 
 ## Core design principles
 
-1. **Never trust the client.** Timestamp, verification status, role, location distance — sab server-side compute/validate hota hai.
+1. **Never trust the client.** Timestamp, verification status, role, location validity — sab server-side compute/validate hota hai.
 2. **Camera-only proof.** `<input type="file">` kabhi use nahi hota attendance ke liye — sirf `getUserMedia()` se live stream.
-3. **Consent-first pairing.** Location/activity sirf explicit pairing + per-permission toggle ke baad visible hoti hai, revoke kabhi bhi possible.
+3. **Consent-first pairing.** Activity sirf explicit pairing + per-permission toggle ke baad visible hoti hai, revoke kabhi bhi possible.
 4. **Defense in depth, not "spoof-proof".** Multiple weak signals (photo freshness, location genuineness, device binding, nonce, risk score) combine karke fraud ko *substantially harder* banate hain — impossible nahi.
-7. **Mobile-first.** Har UI pehle phone (360-430px) ke liye banti hai, phir bade screens ke liye scale up hoti hai.
-8. **Location-free check-in.** Attendance kahin se bhi mark ho sakti hai — validation "kahan ho" par nahi, "location reading sach hai ya nahi" par hai.
 5. **Server-authoritative time.** Client ka `Date.now()`/timezone kabhi trust nahi hota attendance timestamp ke liye.
 6. **Private media by default.** R2 bucket public nahi — sab access short-lived signed URLs se.
+7. **Mobile-first.** Har UI pehle phone (360-430px) ke liye banti hai, phir bade screens ke liye scale up hoti hai.
+8. **Geofence-free check-in.** Attendance kahin se bhi mark ho sakti hai — validation "kahan ho" par nahi, "location reading sach hai ya nahi" par hai.
+9. **One-time location capture, no tracking.** Location sirf check-in/check-out/lunch ke exact moment par ek baar li jaati hai. `watchPosition`, background tracking aur live partner-position — teeno explicitly out of scope.
 
 ## PWA route map
 
@@ -134,7 +138,6 @@ User clicks "Verify & Check In"
 │   ├── leave
 │   ├── history
 │   ├── partner
-│   ├── location
 │   ├── notifications
 │   ├── settings
 │   └── devices
@@ -144,7 +147,6 @@ User clicks "Verify & Check In"
     ├── users
     ├── attendance
     ├── leaves
-    ├── live-activity
     ├── verification
     ├── media
     ├── suspicious

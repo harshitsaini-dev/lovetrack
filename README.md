@@ -9,12 +9,14 @@ LoveTrack ek hidden tracking app **nahi** hai. Har user ko clearly pata hota hai
 ## Features
 
 - **Live camera proof** — attendance sirf `getUserMedia()` se, koi gallery/file upload nahi
-- **Location kahin se bhi** — koi fixed geofence nahi; validation sirf ye hai ki location genuine aur accurate ho
+- **Location kahin se bhi** — koi fixed geofence nahi; validation sirf ye hai ki us waqt ki location genuine aur accurate ho
+- **One-time capture** — location sirf check-in/check-out/lunch ke exact moment par li jaati hai, uske baad kabhi nahi
 - **Server-authoritative time** — device ka clock/timezone badalne se attendance timestamp nahi badalta
 - **Lunch proof video** — 5-20s `MediaRecorder` clip, private R2 bucket, short-lived signed URLs
 - **Leave workflow** — mandatory reason, optional admin approval, full audit trail
-- **Automatic reminders** — missing activity par daily email (Cloudflare Cron + Resend)
-- **Partner dashboard** — consent-gated activity + latest location on a map
+- **Automatic reminders** — missing activity par daily email; har user apna reminder time Settings se chunta hai (Cloudflare Cron + Resend)
+- **Installable** — landing page aur settings dono jagah "Install app" button, plus light/dark toggle
+- **Partner dashboard** — consent-gated attendance events, har event ki captured location map par (live tracking nahi)
 - **Admin panel** — users, attendance, leaves, suspicious events, media evidence, audit logs
 - **Mobile-first PWA** — installable, safe-area aware, `prefers-reduced-motion` respected
 
@@ -63,9 +65,25 @@ npm run build            # production build
 npm run start            # serve production build
 npm run lint             # ESLint
 npm run typecheck        # tsc --noEmit
-npm run test:e2e         # Playwright, mobile + desktop
-npm run test:e2e:mobile  # Playwright, phone viewport only
+npm run test:e2e          # Playwright — opens a real browser you can watch
+npm run test:e2e:mobile   # phone viewport only
+npm run test:e2e:ui       # Playwright's interactive UI mode
+npm run test:e2e:headless # no browser window (what CI runs)
+npm run test:e2e:report   # open the last HTML report
 ```
+
+E2E runs are **headed by default** on your machine — a real browser window
+opens and the actions are slowed down so you can follow along. CI runs
+headless automatically. Force either mode with `HEADED=1` / `HEADED=0`.
+
+The signed-in tests need a test account:
+
+```bash
+node scripts/seed-e2e-user.mjs   # creates it, prints the credentials
+```
+
+Put the printed `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD` into `.env.local`.
+Without them those tests skip themselves rather than fail.
 
 ### Database migrations
 
@@ -95,7 +113,7 @@ Setup guides: [docs/07-deployment.md](./docs/07-deployment.md)
 ## Limitations (honest list)
 
 - Browser/PWA se fake GPS, virtual camera, ya emulator ko **100% rokna possible nahi** hai. LoveTrack in cheezon ko *mushkil aur detectable* banata hai, impossible nahi.
-- **Background location tracking nahi hai.** App band hone ke baad "always-live" location ka koi claim nahi — partner ko hamesha "last updated X ago" dikhta hai.
+- **Koi live/continuous location tracking nahi hai — by design.** Location sirf us ek moment par capture hoti hai jab aap khud check-in / check-out / lunch mark karte hain. Uske baad app aapki location nahi dekhta. Partner ko "aap abhi kahan ho" nahi dikhta — sirf ye dikhta hai ki aapne kab aur kahan se attendance mark ki.
 - EXIF metadata ko kabhi proof nahi maana jata.
 - IP/timezone mismatch checks sirf heuristics hain — VPN se false positive aa sakta hai.
 

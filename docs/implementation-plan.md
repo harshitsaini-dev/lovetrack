@@ -9,6 +9,10 @@ Ye master prompt (`project.md`, section 28) ka mandatory first deliverable hai. 
 | 1 | **Consent-based only** — hidden surveillance kabhi nahi | Original spec, non-negotiable |
 | 2 | **Mobile-first** — har screen pehle 360-430px ke liye | User requirement, 2026-08-20 |
 | 3 | **No geofence** — check-in kahin se bhi, bas location genuine ho | User requirement, 2026-08-20 |
+| 3b | **No live/continuous location** — sirf check-in/out/lunch ke moment par one-time capture. `watchPosition` aur live partner-position banned | User requirement, 2026-08-20 |
+| 3c | **Playwright headed by default** — local runs me browser dikhe, background me nahi | User requirement, 2026-08-20 |
+| 3d | **Reminder time per-user** — Settings panel se, env se nahi. User ke apne timezone me interpret hoti hai | User requirement, 2026-08-20 |
+| 3e | **Install button + theme toggle** public pages par bhi | User requirement, 2026-08-20 |
 | 4 | **Camera-only proof** — `getUserMedia()`, koi file input nahi | Anti-fraud core |
 | 5 | **Server-authoritative time** — client clock kabhi trust nahi | Anti-fraud core |
 | 6 | **Private media** — R2 private bucket + short-lived signed URLs | Privacy |
