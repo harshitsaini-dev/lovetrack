@@ -119,7 +119,7 @@ export function AppHeader({ profile }: { profile: Profile }) {
 
               {profile.role === "admin" && (
                 <DropdownMenuItem asChild>
-                  <Link href="/admin/dashboard">
+                  <Link href="/admin">
                     <Shield className="size-4" aria-hidden />
                     Admin panel
                   </Link>

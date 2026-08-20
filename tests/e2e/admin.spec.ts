@@ -81,6 +81,41 @@ test("an ordinary user is refused every admin route", async ({ page }) => {
   }
 });
 
+/**
+ * Reaches the panel the way an admin actually does — through the account
+ * menu — rather than by navigating straight to /admin.
+ *
+ * Every other test here used `page.goto`, so the menu's link was never
+ * followed by anything. It pointed at /admin/dashboard, which does not
+ * exist, and shipped a 404 behind the only entry point a real admin would
+ * ever use. Admin-only UI is invisible to a suite whose accounts are all
+ * ordinary users, so it has to be clicked deliberately.
+ */
+test("the account menu actually leads to the admin panel", async ({ page }) => {
+  await login(page, ADMIN_EMAIL!, ADMIN_PASSWORD!);
+
+  await page.getByRole("button", { name: "Account menu" }).click();
+
+  const adminLink = page.getByRole("menuitem", { name: /admin panel/i });
+  await expect(adminLink).toBeVisible();
+
+  await adminLink.click();
+
+  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();
+});
+
+test("an ordinary user is not offered the admin panel", async ({ page }) => {
+  await login(page, USER_EMAIL!, USER_PASSWORD!);
+
+  await page.getByRole("button", { name: "Account menu" }).click();
+
+  await expect(page.getByRole("menuitem", { name: /profile/i })).toBeVisible();
+  await expect(
+    page.getByRole("menuitem", { name: /admin panel/i }),
+  ).toHaveCount(0);
+});
+
 test("the admin sees the dashboard and its sections", async ({ page }) => {
   await login(page, ADMIN_EMAIL!, ADMIN_PASSWORD!);
   await page.goto("/admin");
