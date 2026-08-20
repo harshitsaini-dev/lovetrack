@@ -7,7 +7,10 @@ Last updated: 2026-08-20
 ### Phase 2 me kya bana (2026-08-20)
 
 - **Supabase project live**: ref `<project-ref>`, keys `.env.local` me (gitignored)
-- **Migration `0001_profiles.sql` applied** — `user_role`/`account_status` enums, `profiles` table (14 columns), `updated_at` trigger, `handle_new_user()` signup trigger, `is_admin()` SECURITY DEFINER helper, RLS policies
+- **Migration `0001_profiles.sql` applied** — `user_role`/`account_status` enums, `profiles` table, `updated_at` trigger, `handle_new_user()` signup trigger, `is_admin()` SECURITY DEFINER helper, RLS policies
+- **Migration `0002_reminder_time.sql` applied** — per-user `reminder_time` (default `20:30`, user ke apne timezone me), partial index for the reminder cron
+- **Settings panel** — naam, timezone, reminder time, per-activity email toggles
+- **Install button + theme toggle** — landing, auth pages (login/register/forgot/reset) aur settings, sab jagah
 - **Auth flows** — register, login, logout, forgot-password, reset-password, email confirm (`/auth/confirm`)
 - **`/auth/recover`** — self-heals a signed-in user with no profile row (warna `/login` ↔ `/app/dashboard` infinite loop ban jaata)
 - **Route protection** — `proxy.ts` (Next 16 me `middleware` deprecated ho gaya hai)
@@ -98,6 +101,17 @@ Ye sab abhi **pending** hain — jaise-jaise phases aayenge tab honge:
 - [ ] Playwright MCP install karna: `claude mcp add playwright npx @playwright/mcp@latest`
 
 Jab bhi koi phase in accounts/keys par depend karega, us waqt exact steps (website, setting, value, `.env` key) is doc me aur chat me batayenge.
+
+## Known cosmetic issue (unresolved, low priority)
+
+Chromium ki **mobile-emulation screenshots** me `/login` par dark theme me footer ka text page ke top par faintly duplicate paint hota hua dikhta hai.
+
+Investigate kiya gaya:
+- DOM me footer bilkul sahi jagah hai (`top: 786px`), top par koi element nahi hai
+- Footer hide karo to ghost bhi gayab ho jaata hai
+- Desktop (non-emulated) context me reproduce nahi hota
+
+Chuki element ka rect sahi hai, ye **layout/CSS bug nahi** — paint-only renderer artifact lagta hai jo emulation path se aata hai. **Real phone par verify karna baaki hai.** Tab tak koi speculative CSS "fix" nahi kiya gaya.
 
 ## Risk / open items to track
 
