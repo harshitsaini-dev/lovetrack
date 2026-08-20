@@ -116,7 +116,7 @@ test("a pairing request must be accepted before anything is shared", async ({
   await partnerCtx.close();
 });
 
-test("location sharing is off by default and each side controls its own", async ({
+test("sharing starts on, and each side controls only its own switches", async ({
   browser,
 }) => {
   const userCtx = await browser.newContext();
@@ -127,18 +127,26 @@ test("location sharing is off by default and each side controls its own", async 
   const attendance = user.locator('[id$="-share_attendance"]');
   const location = user.locator('[id$="-share_location"]');
 
+  // Every switch starts on. People pair on purpose and expect to see each
+  // other's day; what has to keep working is turning one off, below.
   await expect(attendance).toHaveAttribute("data-state", "checked");
-  // Location is the most sensitive field, so it must be opt-in.
-  await expect(location).toHaveAttribute("data-state", "unchecked");
+  await expect(location).toHaveAttribute("data-state", "checked");
 
   // The partner's choices are shown but not editable from this side.
   await expect(user.getByText(/wo aapke saath kya share karte hain/i)).toBeVisible();
 
   await location.click();
-  await expect(location).toHaveAttribute("data-state", "checked");
+  await expect(location).toHaveAttribute("data-state", "unchecked");
 
   // The change must survive a reload — i.e. it actually reached the database.
   await user.reload();
+  await expect(user.locator('[id$="-share_location"]')).toHaveAttribute(
+    "data-state",
+    "unchecked",
+  );
+
+  // Put it back, so the next spec starts from the shipped default.
+  await user.locator('[id$="-share_location"]').click();
   await expect(user.locator('[id$="-share_location"]')).toHaveAttribute(
     "data-state",
     "checked",

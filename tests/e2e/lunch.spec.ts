@@ -56,6 +56,52 @@ async function capture(page: Page, action: RegExp) {
   await page.getByRole("button", { name: action }).click();
 }
 
+/**
+ * Lunch in and lunch out take no photo, so there is no shutter to press --
+ * the screen opens straight on the location confirmation and the only thing
+ * to wait for is the fix.
+ */
+async function confirmLocationOnly(page: Page, action: RegExp) {
+  await expect(page.getByRole("button", { name: /photo capture karein/i })).toHaveCount(0);
+
+  await expect(page.getByText(/location mil gayi|nawada|delhi/i).first()).toBeVisible({
+    timeout: 20_000,
+  });
+
+  const submit = page.getByRole("button", { name: action });
+  await expect(submit).toBeEnabled({ timeout: 20_000 });
+  await submit.click();
+}
+
+/** Records and submits the verification clip. */
+async function recordClip(page: Page) {
+  // The instruction says to record while eating, and asks for the phrase.
+  await expect(page.getByText(/khana khate hue video banayein/i)).toBeVisible();
+  await expect(page.getByText(/khana khalo/i).first()).toBeVisible();
+
+  // No file picker here either -- the clip must come from a live stream.
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+
+  const start = page.getByRole("button", { name: /recording shuru karein/i });
+  await expect(start).toBeEnabled({ timeout: 20_000 });
+  await start.click();
+
+  // Below the minimum the stop button says how much longer to hold.
+  await expect(page.getByRole("button", { name: /s aur…/i })).toBeDisabled();
+
+  const stop = page.getByRole("button", { name: /recording rokein/i });
+  await expect(stop).toBeEnabled({ timeout: 15_000 });
+  await stop.click();
+
+  const submit = page.getByRole("button", { name: /proof submit karein/i });
+  await expect(submit).toBeVisible({ timeout: 15_000 });
+  await submit.click();
+
+  await expect(
+    page.getByRole("heading", { name: /lunch verify ho gaya/i }),
+  ).toBeVisible({ timeout: 40_000 });
+}
+
 test("lunch cannot be started before checking in", async ({ page }) => {
   await login(page);
 
@@ -63,7 +109,15 @@ test("lunch cannot be started before checking in", async ({ page }) => {
   await expect(page).toHaveURL(/\/app\/dashboard/);
 });
 
-test("the day walks check-in, lunch start, lunch end, then proof", async ({
+/**
+ * The order is start -> clip -> end, changed in 0022.
+ *
+ * The clip used to come last, after lunch was already marked complete, so it
+ * was evidence for nothing and a day could reach "lunch complete" with no
+ * clip at all. It now sits inside the meal, and lunch cannot be ended
+ * without it.
+ */
+test("the day walks check-in, lunch start, the clip, then lunch end", async ({
   page,
 }) => {
   await login(page);
@@ -79,55 +133,29 @@ test("the day walks check-in, lunch start, lunch end, then proof", async ({
   await page.goto("/app/dashboard");
   await expect(page.getByRole("link", { name: /lunch start/i })).toBeVisible();
 
-  // --- lunch start
+  // --- lunch start, location only
   await page.goto("/app/lunch");
   await expect(page.getByRole("heading", { name: "Lunch start" })).toBeVisible();
-  await capture(page, /verify & lunch start/i);
+  await confirmLocationOnly(page, /verify & lunch start/i);
   await expect(
     page.getByRole("heading", { name: /lunch start (ho gaya|record ho gaya)/i }),
   ).toBeVisible({ timeout: 25_000 });
 
-  // --- lunch end
+  // --- the clip comes next, not last
+  await page.goto("/app/lunch");
+  await expect(page.getByRole("heading", { name: "Lunch verify" })).toBeVisible();
+  await recordClip(page);
+
+  // --- and only now can lunch end
   await page.goto("/app/lunch");
   await expect(page.getByRole("heading", { name: "Lunch end" })).toBeVisible();
-  await capture(page, /verify & lunch end/i);
+  await confirmLocationOnly(page, /verify & lunch end/i);
   await expect(
     page.getByRole("heading", { name: /lunch end (ho gaya|record ho gaya)/i }),
   ).toBeVisible({ timeout: 25_000 });
-
-  // --- the proof clip
-  await page.goto("/app/lunch");
-  await expect(page.getByRole("heading", { name: "Lunch proof" })).toBeVisible();
-
-  // The instruction says to record while eating, and asks for the phrase.
-  await expect(page.getByText(/khana khate hue video banayein/i)).toBeVisible();
-  await expect(page.getByText(/khana khalo/i).first()).toBeVisible();
-
-  // No file picker here either — the clip must come from a live stream.
-  await expect(page.locator('input[type="file"]')).toHaveCount(0);
-
-  const start = page.getByRole("button", { name: /recording shuru karein/i });
-  await expect(start).toBeEnabled({ timeout: 20_000 });
-  await start.click();
-
-  // Below the minimum the stop button says how much longer to hold.
-  await expect(page.getByRole("button", { name: /s aur…/i })).toBeDisabled();
-
-  const stop = page.getByRole("button", { name: /recording rokein/i });
-  await expect(stop).toBeEnabled({ timeout: 15_000 });
-  await stop.click();
-
-  await expect(page.getByRole("button", { name: /proof submit karein/i })).toBeVisible(
-    { timeout: 15_000 },
-  );
-  await page.getByRole("button", { name: /proof submit karein/i }).click();
-
-  await expect(
-    page.getByRole("heading", { name: /lunch proof save ho gaya/i }),
-  ).toBeVisible({ timeout: 40_000 });
 });
 
-test("a second proof for the same day is not offered", async ({ page }) => {
+test("a finished lunch sends you back to the dashboard", async ({ page }) => {
   await login(page);
 
   await page.goto("/app/lunch");

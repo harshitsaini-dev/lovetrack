@@ -120,21 +120,28 @@ test.afterAll(async () => {
   await partnerCtx?.close();
 });
 
-test("attendance is visible, but location is not by default", async () => {
+test("switching location off hides the place but keeps the times", async () => {
+  await user.goto("/app/partner");
+  await user.locator('[id$="-share_location"]').click();
+  await expect(user.locator('[id$="-share_location"]')).toHaveAttribute(
+    "data-state",
+    "unchecked",
+  );
+
   await partner.goto("/app/partner");
 
+  // The times stay. Only the place goes — and the page has to say why,
+  // rather than looking like nothing happened.
   await expect(partner.getByText(/aaj ki activity/i)).toBeVisible();
   await expect(partner.getByText(/checked in/i).first()).toBeVisible();
 
-  // Location sharing is opt-in, so the place must not be here yet — and the
-  // page has to say why, rather than looking like nothing happened.
   await expect(
     partner.getByText(/location share nahi ki gayi/i),
   ).toBeVisible();
   await expect(partner.getByText(/nawada|janakpuri/i)).toHaveCount(0);
 });
 
-test("turning location on reveals the place", async () => {
+test("turning location back on reveals the place", async () => {
   await user.goto("/app/partner");
   await user.locator('[id$="-share_location"]').click();
   await expect(user.locator('[id$="-share_location"]')).toHaveAttribute(

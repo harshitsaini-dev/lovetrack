@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 const DESCRIPTION =
-  "Consent-based attendance and activity verification for couples and friends. Live camera proof, genuine location, and sharing you control.";
+  "See when your friends start work, break for lunch, and head home. Every entry is marked by them, with a live photo and the location it was made from, and either side can stop sharing at any time.";
 
 export const metadata: Metadata = {
   // Without this, the generated opengraph-image resolves to a relative URL

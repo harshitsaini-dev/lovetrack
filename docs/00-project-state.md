@@ -28,9 +28,54 @@ Last updated: 2026-08-20
 | Layer | Result |
 |---|---|
 | `npm run check` (typecheck + lint + unit + build) | âœ… exit 0 |
-| Vitest unit tests | **70/70** |
+| Vitest unit tests | **72/72** |
 | `npm run verify:all` â€” database-level, adversarial | **185/185** |
-| Playwright E2E (mobile-first, headed) | **103/103** |
+| Playwright E2E (mobile-first, headed) | **105/105** |
+
+### Media, map links aur lunch order (20 Aug 2026)
+
+Migrations **0021** aur **0022**.
+
+**Partner/admin ko photo-video dikhna.** Asli wajah UI ka na hona tha —
+`getLunchProofUrl` ka koi caller hi nahi tha, aur `get_partner_events`
+`photo_path` return hi nahi karta tha. Ab `share_photos` switch hai, aur access
+ka faisla SQL me hota hai (`get_attendance_photo_access` /
+`get_lunch_proof_access`): teen hi raaste — apni hai, admin ho, ya owner ne
+share kiya hai. Admin view **URL banne se pehle** audit log me jaata hai.
+
+**Saare sharing switches ab default ON.** Purana privacy-first default
+jaan-boojhkar palta gaya: log soch-samajh kar pair karte hain aur ek doosre ka
+din dekhna chahte hain; khaali shuruaat app ko toota hua dikhati thi. Har switch
+abhi bhi dikhta hai, kabhi bhi off ho sakta hai, "stop all sharing" ek tap hai.
+
+**Location ab clickable** — Google Maps universal URL, jo Android/iOS par
+installed app aur baaki jagah web map kholta hai.
+
+**History poora record** — ek `DayDetail` component teeno jagah (apni
+history, partner ki, admin wali), sirf permissions ka farak. **Lunch in aur
+lunch out alag columns**, kyunki ek "Lunch" column break ki lambai chhupa deta
+tha.
+
+**Lunch ab start → video → end.** Pehle video baad me aati thi, jab lunch
+already complete mark ho chuka hota tha — wo us stretch ka koi proof nahi
+thi, aur din `lunch_verified` tak pahunch sakta tha **bina kisi video ke**.
+Lunch in/out par photo nahi; beech wali clip hi poore period ka proof hai.
+`lunch_end` ab clip ke bina **database level par** refuse hota hai.
+
+**Admin delete** — ek entry ya poora din, typed reason ke saath, jo deleted
+row ke content ke saath audit log me delete se **pehle** likha jaata hai.
+
+Do cheezein iske dauraan pakdi gayin:
+
+1. **`create or replace` se function ka return type nahi badalta.**
+   `get_partner_events` me teen naye columns the, isliye 0021 beech me fail
+   hua. Ab pehle `drop function` hota hai.
+2. **E2E account suspended pada tha** ek interrupted parallel run se. `is_admin()`
+   ko admin role ke saath **active status** bhi chahiye, isliye har admin check
+   `not_admin` de raha tha — aisi wajah se jiska test se koi lena-dena nahi
+   tha.
+
+---
 
 ### Auth: link se OTP par shift (20 Aug 2026)
 
@@ -62,6 +107,7 @@ Do cheezein is kaam me pakdi gayin:
 | `verify-admin.mjs` | 25 |
 | `verify-hardening.mjs` | 20 |
 | `verify-otp-auth.mjs` | 18 |
+| `verify-media-and-delete.mjs` | 22 |
 
 ### Phase 12 me ek plan badla
 

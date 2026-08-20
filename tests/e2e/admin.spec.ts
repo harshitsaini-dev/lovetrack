@@ -123,6 +123,10 @@ test("the admin sees the dashboard and its sections", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();
   await expect(page.getByText(/audit log me jaata hai/i)).toBeVisible();
 
+  // .first(), because /admin grows a second link to the same place when
+  // there are flagged submissions waiting ("N submissions review ke liye").
+  // Matching loosely made this test pass or fail on whether other tests had
+  // left flagged data behind, which is not what it is checking.
   for (const section of [
     "Users",
     "Review",
@@ -131,7 +135,9 @@ test("the admin sees the dashboard and its sections", async ({ page }) => {
     "Email log",
     "Audit log",
   ]) {
-    await expect(page.getByRole("link", { name: new RegExp(section, "i") })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: new RegExp(section, "i") }).first(),
+    ).toBeVisible();
   }
 });
 

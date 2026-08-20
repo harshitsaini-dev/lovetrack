@@ -1,26 +1,64 @@
 # ❤️ LoveTrack
 
-**Consent-based attendance & activity verification PWA** for couples and friends.
+**See when your friends start work, break for lunch, and head home.**
 
-LoveTrack ek hidden tracking app **nahi** hai. Har user ko clearly pata hota hai ki unka kaunsa data kis paired person ko dikh raha hai, aur sharing dono taraf se kabhi bhi revoke ki ja sakti hai.
+You and a friend pair with each other. From then on, each of you marks your own
+day — check in when you reach work, mark lunch in and out, check out when you
+leave — and the other can see it. Every entry is made with a live photo and the
+location it was made from, so what you are looking at actually happened.
 
-> **Security statement:** LoveTrack does not claim impossible spoof-proof verification. It uses multi-signal verification, server-authoritative timestamps, fresh camera capture, location genuineness checks, device binding, replay protection and audit logging to make fraudulent attendance substantially harder and detectable.
+LoveTrack is not a tracker. Nobody appears in your app until you have both
+agreed to pair. Nothing is recorded unless the person marks it themselves.
+Between entries the app does not know or care where anyone is, and either side
+can stop sharing at any moment.
+
+Live at **[lovetrack.harshitsaini.in](https://lovetrack.harshitsaini.in)**.
+
+> **On verification, plainly:** LoveTrack does not claim spoof-proof
+> verification. It uses server-authoritative timestamps, fresh camera capture,
+> single-use nonces, location plausibility checks and audit logging to make a
+> faked entry substantially harder to produce and easy to spot. That is a
+> different and more honest promise than "impossible to fake".
+
+## What a day looks like
+
+| Step | What happens |
+|---|---|
+| **Check-in** | Live photo + the location right then. The prompt greets your partner by name, so it reads like a message rather than a serial number. |
+| **Lunch in** | Location only. No photo — the clip below covers this stretch. |
+| **Lunch verify** | A 5–20 second clip, recorded *during* the meal. Lunch cannot be ended until it exists. |
+| **Lunch out** | Location only. |
+| **Check-out** | Live photo + location. |
+| **Leave** | Information, not a request. You are telling your friend you are off today; nobody approves it, and you can withdraw it. |
+
+The lunch clip sits in the middle on purpose. Recorded after the meal was
+already marked complete — as it was originally — it proved nothing about the
+stretch it was meant to cover, and a day could be marked "lunch complete" with
+no clip at all.
 
 ## Features
 
-- **OTP-based email verification** — koi confirmation link nahi, sirf code. Mail scanners aur link previewers har incoming URL ko fetch kar lete hain, jisse one-time link asli banda click kare usse pehle hi kharch ho jaata hai (`otp_expired`). Code ko sirf padhne se koi machine kharch nahi kar sakti.
-- **Saare auth emails apne domain se** — Supabase ka built-in mailer bilkul use nahi hota. Codes admin API se mint hote hain aur apne Resend template se jaate hain, `email_logs` me record hoke.
-- **Live camera proof** — attendance sirf `getUserMedia()` se, koi gallery/file upload nahi
-- **Location kahin se bhi** — koi fixed geofence nahi; validation sirf ye hai ki us waqt ki location genuine aur accurate ho
-- **One-time capture** — location sirf check-in/check-out/lunch ke exact moment par li jaati hai, uske baad kabhi nahi
-- **Server-authoritative time** — device ka clock/timezone badalne se attendance timestamp nahi badalta
-- **Lunch proof video** — 5-20s `MediaRecorder` clip, private bucket, short-lived signed URLs
-- **Leave = information, not approval** — aap partner ko batate ho ki aaj chhutti hai; kisi ki permission nahi chahiye. Record hota hai, cancel ho sakta hai, audit trail rehti hai.
-- **Automatic reminders** — missing activity par daily email; har user apna reminder time Settings se chunta hai (scheduled cron + Resend)
-- **Installable** — landing page aur settings dono jagah "Install app" button, plus light/dark toggle
-- **Partner dashboard** — consent-gated attendance events, har event ki captured location map par (live tracking nahi)
-- **Admin panel** — users, attendance, leaves, suspicious events, media evidence, audit logs
-- **Mobile-first PWA** — installable, safe-area aware, `prefers-reduced-motion` respected
+- **Their working day, honestly timed** — the timestamp is the database's
+  `now()`, so changing a phone's clock or timezone changes nothing
+- **Lunch in and lunch out are separate**, so the length of the break is
+  visible rather than hidden behind a single "Lunch" column
+- **Live camera proof** — `getUserMedia()` only, no gallery upload
+- **Location from anywhere** — no geofence, no fixed office. What is checked is
+  whether the reading is genuine and accurate, not where it is
+- **One-time capture** — location is read at the moment you mark something and
+  never again. There is no "where are they now"
+- **Tap a location to open it in Maps** — the installed app on Android and iOS,
+  the web map everywhere else
+- **Photos and clips, viewable any time** — from history, by a paired friend or
+  an admin, as often as needed; nothing is a one-time look
+- **Granular sharing** — attendance, location, lunch clip, leave and photos are
+  five separate switches, each revocable, plus one-tap "stop all sharing"
+- **Automatic reminders** — a daily nudge when the day is unfinished, at a time
+  each person picks in their own timezone
+- **Admin panel** — users, flagged captures, evidence media, audit log, data
+  retention, and every tunable setting without a redeploy
+- **Installable PWA** — mobile-first, safe-area aware, `prefers-reduced-motion`
+  respected, custom offline / 404 / 500 / access-denied screens
 
 ## Tech stack
 
@@ -40,7 +78,13 @@ LoveTrack ek hidden tracking app **nahi** hai. Har user ko clearly pata hota hai
 | Scheduled jobs | GitHub Actions cron → `/api/cron/reminders` |
 | DNS | Cloudflare (`lovetrack.harshitsaini.in`) |
 
-**Hosting Cloudflare Workers kyun nahi:** Next.js 16 me `middleware.ts` ka naam `proxy.ts` ho gaya aur wo **sirf Node runtime** par chalta hai — edge par force karne par Next khud mana kar deta hai. `@opennextjs/cloudflare` abhi Node middleware support nahi karta. LoveTrack ka `proxy.ts` optional nahi hai: usme Supabase session refresh, route gating, aur **per-request CSP nonce** hai. Nonce ke bina CSP me `unsafe-inline` daalna padta, jo CSP ko lagbhag decorative bana deta hai. Isliye app Vercel par hai; domain aur DNS Cloudflare par hi hain.
+**Why not Cloudflare Workers:** Next.js 16 renamed `middleware.ts` to
+`proxy.ts` and made it **Node-runtime only** — Next itself refuses to run it on
+the edge. `@opennextjs/cloudflare` does not support Node middleware, so the two
+block each other. Dropping `proxy.ts` was not an option: it carries the
+per-request CSP nonce, and without it the CSP needs `unsafe-inline`, which
+makes it close to decorative. The app runs on Vercel; the domain and DNS stay
+on Cloudflare.
 
 ## Local setup
 
@@ -52,37 +96,37 @@ npm run dev
 
 Open http://localhost:3000
 
-**Windows shortcuts** — double-click, ya terminal se:
+**Windows shortcuts** — double-click, or from a terminal:
 
 ```bat
-start.bat     :: dev server start karo (port 3000)
-stop.bat      :: port par chal raha server band karo
+start.bat     :: start the dev server (port 3000)
+stop.bat      :: stop whatever is on that port
 restart.bat   :: stop + start
 ```
 
-Doosre port ke liye: `set PORT=4000 && start.bat`
+For another port: `set PORT=4000 && start.bat`
 
 ### Scripts
 
 ```bash
 npm run dev              # dev server (Turbopack)
 npm run build            # production build
-npm run start            # serve production build
+npm run start            # serve the production build
 npm run lint             # ESLint
 npm run typecheck        # tsc --noEmit
 npm run test             # Vitest — pure logic (time, validation, CSP, prompts)
 npm run check            # typecheck + lint + unit tests + build, in order
-npm run verify:all       # 185 adversarial checks against the real database
-npm run test:e2e          # Playwright — opens a real browser you can watch
-npm run test:e2e:mobile   # phone viewport only
-npm run test:e2e:ui       # Playwright's interactive UI mode
-npm run test:e2e:headless # no browser window (what CI runs)
-npm run test:e2e:report   # open the last HTML report
+npm run verify:all       # 208 adversarial checks against the real database
+npm run test:e2e         # Playwright — opens a real browser you can watch
+npm run test:e2e:mobile  # phone viewport only
+npm run test:e2e:ui      # Playwright's interactive UI mode
+npm run test:e2e:headless # no browser window
+npm run test:e2e:report  # open the last HTML report
 ```
 
-E2E runs are **headed by default** on your machine — a real browser window
-opens and the actions are slowed down so you can follow along. CI runs
-headless automatically. Force either mode with `HEADED=1` / `HEADED=0`.
+E2E runs are **headed by default** on a developer machine — a real browser
+window opens and the actions are slowed down so the run can be followed by eye.
+CI runs headless. Force either mode with `HEADED=1` / `HEADED=0`.
 
 The signed-in tests need a test account:
 
@@ -93,126 +137,208 @@ node scripts/seed-e2e-user.mjs   # creates it, prints the credentials
 Put the printed `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD` into `.env.local`.
 Without them those tests skip themselves rather than fail.
 
-### Testing ka teen-parat model
+### The three-layer test model
 
-Har feature teen jagah verify hota hai, kyunki teeno alag tarah ke bug pakadte hain:
+Every feature is verified in three places, because each layer catches a
+different kind of bug:
 
-| Parat | Kya check karti hai | Kaunsa bug pakadti hai |
+| Layer | What it checks | What it catches |
 |---|---|---|
-| **Vitest** (`tests/unit/`) | Pure logic — timezone formatting, Zod schemas, CSP builder, camera prompts | Galat jawab jo database ya browser par depend nahi karta |
-| **Verify scripts** (`scripts/verify-*.mjs`) | Seedha Supabase par, adversarially — "kya partner doosre ka data padh sakta hai?" | RLS holes, SECURITY DEFINER leaks, rate-limit bypass |
-| **Playwright** (`tests/e2e/`) | Asli browser, phone viewport, fake camera | UI jo sahi data ko silently drop kar de |
+| **Vitest** (`tests/unit/`) | Pure logic — timezone formatting, Zod schemas, the CSP builder, camera prompts | A wrong answer that does not depend on a database or a browser |
+| **Verify scripts** (`scripts/verify-*.mjs`) | Supabase directly, adversarially — "can a partner read someone else's data?" | RLS holes, `SECURITY DEFINER` leaks, rate-limit bypasses |
+| **Playwright** (`tests/e2e/`) | A real browser, phone viewport, fake camera | UI that silently drops correct data |
 
-E2E suite **hamesha ek worker** par chalta hai. Ye speed ki kurbani jaan-boojhkar hai: saare specs ek hi asli account ko drive karte hain — `profile.spec` uska naam aur password badalta hai jabki doosre usse login kar rahe hote hain. Parallel chalane par login chupchaap bina session ke return hone lagta hai, jo "auth toot gaya" jaisa dikhta hai, jabki asal me do tests ek account par lad rahe hote hain. Iska sahi ilaaj per-worker account hai, bada timeout nahi.
+All three are necessary. The RLS scripts were once 21/21 green while the
+partner page was quietly dropping every pair — only the E2E run caught it. It
+has also gone the other way.
 
-Ye teeno zaroori hain. Ek baar RLS scripts 21/21 green the jabki partner page har pair chupchaap drop kar raha tha — sirf E2E ne pakda. Ulta bhi hua hai.
+The E2E suite runs on **one worker, always**. It drives a handful of shared
+real accounts, and `profile.spec` changes the test user's name and password
+while other specs are signing in as them. In parallel that surfaces as logins
+that silently produce no session, which reads as broken auth rather than as two
+tests fighting over one account. Fixing it properly means an account per
+worker, not a longer timeout.
 
 ### Database migrations
 
-`supabase/migrations/*.sql` ko order me Supabase SQL Editor me run karein
+Run `supabase/migrations/*.sql` in order in the Supabase SQL Editor
 (Dashboard → SQL Editor → New query → paste → Run).
 
-### Pehla admin kaise banayein
+### Creating the first admin
 
-App ke andar se admin banne ka **koi option nahi hai — jaan-boojhkar.** "Koi bhi khud ko admin bana le" bootstrap nahi hota, hole hota hai. Pehla admin bahar se, kisi trusted jagah se aana chahiye.
+There is **no way to become an admin from inside the app** — deliberately.
+"Anyone can make themselves an admin" is not a bootstrap, it is a hole. The
+first admin has to come from somewhere trusted.
 
-1. **Normal account banao** — `/register` par sign up karo, phir email me aaye confirm link par click karo. Admin bhi pehle ek aam user hi hota hai.
+1. **Sign up normally** at `/register` and confirm the emailed code. An admin
+   is an ordinary user first.
 
-2. **Role promote karo**, apni machine se:
+2. **Promote the account** from your machine:
 
    ```bash
    node scripts/set-role.mjs you@example.com admin
    ```
 
-   Script `.env.local` se service-role key uthata hai, isliye jis Supabase project ki keys wahan hain, wahi update hota hai — production keys ke saath ye **live database** badlega. Output:
+   The script reads the service-role key from `.env.local`, so with production
+   keys it updates the live database. Output:
 
    ```
    you@example.com -> admin
    ```
 
-   Laptop paas na ho to Supabase Dashboard → SQL Editor:
+   Without a laptop, the same thing in the Supabase SQL Editor:
 
    ```sql
    update profiles set role = 'admin' where email = 'you@example.com';
    ```
 
-3. **`/admin` kholo.** Dobara login karne ki zarurat nahi — `requireAdmin()` har request par database se role padhta hai, session token se nahi. Bas page refresh kar do. `/forbidden` dikhe to matlab role update hua hi nahi.
+3. **Open `/admin`.** No need to sign in again — `requireAdmin()` reads the
+   role from the database on every request, not from the session token. A
+   `/forbidden` page means step 2 did not take effect.
 
-Wapas normal user banane ke liye: `node scripts/set-role.mjs you@example.com user`
+To demote: `node scripts/set-role.mjs you@example.com user`
 
-**Dhyan rakhna:** admin doosre logon ka evidence media dekh sakta hai. Isiliye har admin action `audit_logs` me jaata hai — apna bhi. Role dena ek asli decision hai, convenience nahi.
+**Worth knowing:** an admin can view other people's evidence media. That is why
+every admin action is written to `audit_logs` — including yours. Granting the
+role is a real decision, not a convenience.
 
-Admin panel me: `/admin` (stats), `/admin/users`, `/admin/review` (flagged events + media), `/admin/settings` (accuracy limits, risk weights, nonce lifetime, retention — sab bina redeploy ke), `/admin/storage` (purana data delete karke free tier maintain karna), `/admin/audit`, `/admin/emails`.
+Admin routes: `/admin` (stats) · `/admin/users` · `/admin/users/[id]` (full
+record and media) · `/admin/review` (flagged captures) · `/admin/settings` ·
+`/admin/storage` (delete old data to stay inside the free tier) · `/admin/audit`
+· `/admin/emails`
 
-## Security model — short version
+## Security model
 
-- **Server-authoritative time.** Attendance timestamp hamesha database ka `now()` hai, device ka clock nahi.
-- **Nonce + replay protection.** Har capture ke liye ek short-lived nonce, ek hi baar use hota hai.
-- **Verification codes kabhi email subject me nahi jaate.** `sendEmail` har subject `email_logs` me likhta hai aur admin wo table padh sakte hain — code subject me hota to koi bhi admin doosre ka reset code padh ke account le leta. Code sirf body me hai, aur body store hi nahi hoti.
-- **RLS everywhere.** Har table par row level security; partner ko coordinates ka **direct read access nahi** hai — sab kuch `SECURITY DEFINER` functions se jaata hai jo permission check karte hain.
-- **CSP with per-request nonce + `strict-dynamic`.** `unsafe-inline` kahin nahi.
-- **Permissions-Policy.** Sirf camera, microphone, geolocation — baaki har sensor band.
-- **Rate limiting** Postgres me, hashed identifiers ke saath (IP + identifier dono).
-- **Risk scoring** configurable signals se; flagged events admin review me jaate hain, user ko block nahi karte.
-- **Audit log** har admin action aur har settings change par.
+- **Server-authoritative time.** An attendance timestamp is always the
+  database's `now()`, never the device clock.
+- **Single-use nonces.** Each capture is issued a short-lived nonce that is
+  spent on use, so a submission cannot be replayed.
+- **RLS everywhere.** A partner has **no direct read access** to attendance
+  rows: latitude sits on the same row as the timestamp, and a row policy cannot
+  grant one without the other. Partner reads go through `SECURITY DEFINER`
+  functions that withhold each field according to its own switch.
+- **Media access is decided in SQL.** There are three ways to open a photo and
+  no fourth: it is yours, you are an admin, or its owner shares photos with
+  you. An admin view is written to the audit log *before* the signed URL is
+  minted — a view that cannot be recorded does not happen.
+- **Verification codes never appear in an email subject.** Subjects are stored
+  in `email_logs`, which admins can read; a code there would let any admin take
+  over an account silently. The code lives only in the body, which is not
+  stored.
+- **CSP with a per-request nonce and `strict-dynamic`.** No `unsafe-inline`.
+- **Permissions-Policy.** Camera, microphone and geolocation only; every other
+  sensor is denied.
+- **Rate limiting in Postgres**, on hashed identifiers, keyed on both IP and
+  the identifier so neither alone is a way around it.
+- **Risk scoring** from configurable signals. A flagged capture goes to admin
+  review; it does not lock the user out.
+- **Audit log** on every admin action and every settings change.
 
 Detail: [docs/03-security-anti-fraud.md](./docs/03-security-anti-fraud.md)
 
-## Deployment
+## Authentication
 
-App **Vercel** par deploy hoti hai, domain aur DNS **Cloudflare** par rehte hain.
+Email confirmation and password reset both use **8-digit codes, not links**.
 
-```bash
-npx vercel            # pehli baar — project link karo
-npx vercel --prod     # production deploy
-```
+Mail scanners and link previewers fetch every URL in an incoming message, and
+a one-time confirmation link is spent by that fetch — the real person then
+clicks it and is told it has expired. A code cannot be spent by a machine that
+merely reads the email.
 
-Vercel dashboard → Settings → Environment Variables me `.env.example` ki saari keys daalni hain (`E2E_*` chhodkar), aur `NEXT_PUBLIC_APP_URL=https://lovetrack.harshitsaini.in`.
-
-Uske baad:
-
-1. Vercel → Domains → `lovetrack.harshitsaini.in` add karo
-2. Cloudflare DNS me CNAME add karo, **grey cloud (DNS only)** — orange proxy Vercel ke certificate issuance ko todta hai
-3. Supabase → Authentication → URL Configuration me Site URL aur `https://lovetrack.harshitsaini.in/**` redirect add karo
-4. GitHub repo → Settings → Secrets me `APP_URL` aur `CRON_SECRET` daalo, taaki reminders wala workflow chal sake
-
-Poora guide, DMARC roadmap ke saath: [docs/07-deployment.md](./docs/07-deployment.md)
+Supabase's built-in mailer is not used at all. Accounts are created with
+`admin.createUser`, codes are minted with `generateLink` (which returns a code
+and sends nothing), and delivery goes through the app's own Resend templates —
+so every auth email comes from the verified domain and lands in `email_logs`
+like all other mail.
 
 ## Environment variables
 
-Saari keys aur unka purpose [`.env.example`](./.env.example) me documented hain. Real values kabhi commit mat karna — `.env.local` gitignored hai.
+Every key and its purpose is documented in
+[`.env.example`](./.env.example). Never commit real values — `.env.local` is
+gitignored.
 
-Setup guides: [docs/07-deployment.md](./docs/07-deployment.md)
+Most things are **not** environment variables. Accuracy limits, risk
+thresholds and signal weights, nonce lifetime, signed-URL lifetime, lunch clip
+limits and data retention are all configured at `/admin/settings`, because they
+are product decisions rather than deployment facts and changing one should not
+need a redeploy. Every change is audit-logged.
+
+## Deployment
+
+The app deploys to **Vercel**; the domain and DNS stay on **Cloudflare**.
+
+```bash
+npx vercel            # first time — link the project
+npx vercel --prod     # production deploy
+```
+
+1. **Env vars** — Vercel → Settings → Environment Variables. Everything from
+   `.env.example` except the `E2E_*` keys, plus
+   `NEXT_PUBLIC_APP_URL=https://lovetrack.harshitsaini.in`.
+2. **Domain** — Vercel → Domains → add `lovetrack.harshitsaini.in`.
+3. **Cloudflare DNS** — add the CNAME with **grey cloud (DNS only)**. Leaving
+   the orange proxy on stops Vercel issuing a certificate; this is the most
+   common mistake.
+4. **Supabase** → Authentication → URL Configuration: set the Site URL and add
+   `https://lovetrack.harshitsaini.in/**` as a redirect.
+5. **GitHub Secrets** → `APP_URL` and `CRON_SECRET`, for the reminders
+   workflow.
+
+Reminders run from [a GitHub Actions
+cron](./.github/workflows/reminders.yml) rather than Vercel Cron, which on the
+Hobby plan fires only once a day. Reminder times are per-user and per-timezone,
+so the endpoint has to run often and let the database decide who is due; it is
+idempotent, so extra or late runs cost nothing.
+
+Full guide, including the DMARC roadmap:
+[docs/07-deployment.md](./docs/07-deployment.md)
 
 ## Documentation
 
 | Doc | Content |
 |---|---|
-| [docs/00-project-state.md](./docs/00-project-state.md) | Current status — kya ban chuka, kya baaki |
-| [docs/implementation-plan.md](./docs/implementation-plan.md) | Locked decisions + phase-wise plan |
+| [docs/00-project-state.md](./docs/00-project-state.md) | Current status — what is built, what is not |
+| [docs/implementation-plan.md](./docs/implementation-plan.md) | Locked decisions and the phase plan |
 | [docs/01-architecture.md](./docs/01-architecture.md) | Architecture, stack, data flow |
 | [docs/02-database-schema.md](./docs/02-database-schema.md) | Tables, relationships, RLS |
 | [docs/03-security-anti-fraud.md](./docs/03-security-anti-fraud.md) | Security model, anti-spoofing, risk scoring |
 | [docs/04-phases-and-tasks.md](./docs/04-phases-and-tasks.md) | 12 phases with task checklists |
-| [docs/05-hourly-plan.md](./docs/05-hourly-plan.md) | 18-hour execution timeline |
+| [docs/05-hourly-plan.md](./docs/05-hourly-plan.md) | Execution timeline |
 | [docs/06-testing-plan.md](./docs/06-testing-plan.md) | Unit + E2E test matrix |
-| [docs/07-deployment.md](./docs/07-deployment.md) | Deployment + free-tier setup |
+| [docs/07-deployment.md](./docs/07-deployment.md) | Deployment and free-tier setup |
 
-## Limitations (honest list)
+## Limitations (the honest list)
 
-- Browser/PWA se fake GPS, virtual camera, ya emulator ko **100% rokna possible nahi** hai. LoveTrack in cheezon ko *mushkil aur detectable* banata hai, impossible nahi.
-- **Koi live/continuous location tracking nahi hai — by design.** Location sirf us ek moment par capture hoti hai jab aap khud check-in / check-out / lunch mark karte hain. Uske baad app aapki location nahi dekhta. Partner ko "aap abhi kahan ho" nahi dikhta — sirf ye dikhta hai ki aapne kab aur kahan se attendance mark ki.
-- EXIF metadata ko kabhi proof nahi maana jata.
-- IP/timezone mismatch checks sirf heuristics hain — VPN se false positive aa sakta hai.
-- **Device binding abhi advisory hai**, cryptographic nahi. WebCrypto-based binding jaan-boojhkar defer kiya gaya — aadha-adhoora implement karke "device verified" dikhana usse zyada khatarnak hai ki na dikhaya jaaye.
-- Media abhi **Supabase Storage** me hai, R2 me nahi. Media layer me clean seam hai taaki baad me shift ho sake.
+- A browser cannot fully prevent faked GPS, a virtual camera, or an emulator.
+  LoveTrack makes those *harder and detectable*, not impossible.
+- **There is no live or continuous location tracking — by design.** Location is
+  read only at the moment someone marks an entry. After that the app does not
+  look. A friend never sees "where you are now", only where you were when you
+  marked something.
+- EXIF metadata is never treated as proof.
+- IP and timezone mismatch checks are heuristics. A VPN can produce a false
+  positive.
+- **Device binding is advisory, not cryptographic.** WebCrypto-based binding
+  was deliberately deferred — showing "device verified" on a half-built
+  implementation is worse than not showing it.
+- Media currently lives in **Supabase Storage**, not R2. The media layer has a
+  clean seam for that move when video volume makes it worth doing.
 
 ## Privacy notes
 
-- Partner sharing **sirf mutual pairing ke baad** activate hoti hai.
-- **"Stop Sharing Location"** control hamesha visible hai aur turant effective hota hai.
-- Saara evidence media private hai — access sirf short-lived signed URLs se, admin actions audit-logged.
-- User dekh sakta hai ki uska kya data share ho raha hai, aur access revoke kar sakta hai.
+- Sharing starts only after **both people accept a pairing**.
+- Five separate switches — attendance, location, lunch clip, leave, photos —
+  each visible on the partner screen and revocable at any moment, plus a
+  one-tap **stop all sharing**.
+- All switches are **on by default** once a pair is accepted. That is a
+  deliberate choice: people pair on purpose and expect to see each other's day,
+  and starting blank made the app look broken. What keeps it honest is that
+  every switch stays visible and can be turned off immediately.
+- Turning photos off does not pretend the photo never existed — a friend still
+  sees that one was taken, just not the photo. Hiding the difference would
+  misrepresent what happened.
+- All evidence media is private, reachable only through short-lived signed
+  URLs, and every admin view is audit-logged.
 
 ## License
 

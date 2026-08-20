@@ -1,7 +1,7 @@
 {
   "name": "LoveTrack",
   "short_name": "LoveTrack",
-  "description": "Consent-based attendance and activity verification for couples and friends.",
+  "description": "See when your friends start work, break for lunch, and head home. Every entry is marked by them, with a live photo and the location it was made from, and either side can stop sharing at any time.",
   "start_url": "/app/dashboard",
   "scope": "/",
   "display": "standalone",
