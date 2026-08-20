@@ -350,6 +350,73 @@ try {
       JSON.stringify(unchanged));
   }
 
+  console.log("\n6c. Who gets told about somebody else's day");
+  {
+    // Both gates have to hold: the actor shares the category, AND the
+    // recipient asked for that kind of mail. Either alone is not enough.
+    await fetch(`${URL}/rest/v1/pair_permissions?owner_id=eq.${idA}`, {
+      method: "PATCH", headers: admin,
+      body: JSON.stringify({ share_attendance: true, share_leave: true }),
+    });
+    await fetch(`${URL}/rest/v1/profiles?id=eq.${idB}`, {
+      method: "PATCH", headers: admin,
+      body: JSON.stringify({ notify_check_in: true, notify_leave: true }),
+    });
+
+    const both = await rpc(A, "partners_to_notify", {
+      p_actor_id: idA, p_permission: "attendance", p_kind: "check_in",
+    });
+    check("a sharing partner who wants the mail is listed",
+      (both.body ?? []).some((r) => r.partner_id === idB),
+      JSON.stringify(both.body));
+
+    // Gate 1 off. Without this check, email would be a way straight around
+    // the sharing switch: turn attendance off and still get told.
+    await fetch(`${URL}/rest/v1/pair_permissions?owner_id=eq.${idA}`, {
+      method: "PATCH", headers: admin,
+      body: JSON.stringify({ share_attendance: false }),
+    });
+
+    const notShared = await rpc(A, "partners_to_notify", {
+      p_actor_id: idA, p_permission: "attendance", p_kind: "check_in",
+    });
+    check("nobody is mailed about a category that is not shared",
+      (notShared.body ?? []).length === 0, JSON.stringify(notShared.body));
+
+    await fetch(`${URL}/rest/v1/pair_permissions?owner_id=eq.${idA}`, {
+      method: "PATCH", headers: admin,
+      body: JSON.stringify({ share_attendance: true }),
+    });
+
+    // Gate 2 off: the recipient does not want it.
+    await fetch(`${URL}/rest/v1/profiles?id=eq.${idB}`, {
+      method: "PATCH", headers: admin,
+      body: JSON.stringify({ notify_check_in: false }),
+    });
+
+    const optedOut = await rpc(A, "partners_to_notify", {
+      p_actor_id: idA, p_permission: "attendance", p_kind: "check_in",
+    });
+    check("nobody is mailed who switched that notification off",
+      (optedOut.body ?? []).length === 0, JSON.stringify(optedOut.body));
+
+    // The switches are per kind, not one blanket setting.
+    const stillLeave = await rpc(A, "partners_to_notify", {
+      p_actor_id: idA, p_permission: "leave", p_kind: "leave",
+    });
+    check("but leave mail still goes, since that switch is separate",
+      (stillLeave.body ?? []).some((r) => r.partner_id === idB),
+      JSON.stringify(stillLeave.body));
+
+    // The one that matters: this must not become a way to read the email
+    // addresses of other people's partners.
+    const asOther = await rpc(C, "partners_to_notify", {
+      p_actor_id: idA, p_permission: "leave", p_kind: "leave",
+    });
+    check("it cannot be asked about somebody else",
+      (asOther.body ?? []).length === 0, JSON.stringify(asOther.body));
+  }
+
   console.log("\n7. The email log cannot be forged");
   {
     const forge = await post(A, "email_logs", {
