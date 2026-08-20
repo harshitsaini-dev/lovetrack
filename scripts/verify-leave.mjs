@@ -417,6 +417,53 @@ try {
       (asOther.body ?? []).length === 0, JSON.stringify(asOther.body));
   }
 
+  console.log("\n6d. Sharing does not have to be mutual");
+  {
+    /*
+     * Nobody is obliged to share back. A shares attendance with B; B shares
+     * nothing. The notifications have to follow the sharing, one direction
+     * at a time -- otherwise turning your own sharing off would still leak
+     * your day out through the other person's inbox.
+     *
+     * Each side has its own pair_permissions row, so this is really a check
+     * that the right row is being read: the ACTOR's, not the recipient's.
+     */
+    await fetch(`${URL}/rest/v1/pair_permissions?owner_id=eq.${idA}`, {
+      method: "PATCH", headers: admin,
+      body: JSON.stringify({ share_attendance: true }),
+    });
+    await fetch(`${URL}/rest/v1/pair_permissions?owner_id=eq.${idB}`, {
+      method: "PATCH", headers: admin,
+      body: JSON.stringify({ share_attendance: false }),
+    });
+
+    // Both want the mail, so the only thing deciding it is who shares.
+    await fetch(`${URL}/rest/v1/profiles?id=in.(${idA},${idB})`, {
+      method: "PATCH", headers: admin,
+      body: JSON.stringify({ notify_check_in: true }),
+    });
+
+    const aActs = await rpc(A, "partners_to_notify", {
+      p_actor_id: idA, p_permission: "attendance", p_kind: "check_in",
+    });
+    check("the sharer's check-in does reach the other person",
+      (aActs.body ?? []).some((r) => r.partner_id === idB),
+      JSON.stringify(aActs.body));
+
+    const bActs = await rpc(B, "partners_to_notify", {
+      p_actor_id: idB, p_permission: "attendance", p_kind: "check_in",
+    });
+    check("the non-sharer's check-in reaches nobody",
+      (bActs.body ?? []).length === 0,
+      (bActs.body ?? []).length ? "LEAKED WITHOUT SHARING" : "");
+
+    // Put it back so later sections start from the shipped default.
+    await fetch(`${URL}/rest/v1/pair_permissions?owner_id=eq.${idB}`, {
+      method: "PATCH", headers: admin,
+      body: JSON.stringify({ share_attendance: true }),
+    });
+  }
+
   console.log("\n7. The email log cannot be forged");
   {
     const forge = await post(A, "email_logs", {
