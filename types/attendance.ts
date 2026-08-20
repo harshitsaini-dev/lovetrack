@@ -66,6 +66,18 @@ export type RecordEventResult =
     }
   | { ok: false; error: string; status?: VerificationStatus; risk_score?: number; signals?: RiskSignal[] };
 
+export type LunchProof = {
+  id: string;
+  attendance_id: string;
+  user_id: string;
+  event_id: string | null;
+  video_path: string;
+  duration_s: number | null;
+  size_bytes: number | null;
+  challenge_phrase: string | null;
+  created_at: string;
+};
+
 export type SystemSettings = {
   id: boolean;
   max_accuracy_m: number;

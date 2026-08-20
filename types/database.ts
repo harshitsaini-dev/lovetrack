@@ -11,6 +11,7 @@ import type {
   Attendance,
   AttendanceEvent,
   AttendanceEventType,
+  LunchProof,
   SystemSettings,
 } from "@/types/attendance";
 
@@ -135,6 +136,12 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      lunch_proofs: {
+        Row: LunchProof;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       risk_events: {
         Row: {
           id: string;
@@ -221,6 +228,15 @@ export type Database = {
       issue_attendance_nonce: {
         Args: { p_event_type: AttendanceEventType };
         Returns: string;
+      };
+      record_lunch_proof: {
+        Args: {
+          p_video_path: string;
+          p_duration_s: number;
+          p_size_bytes: number;
+          p_challenge_phrase?: string | null;
+        };
+        Returns: unknown;
       };
       record_attendance_event: {
         Args: {

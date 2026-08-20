@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { resetAttendanceState } from "./helpers/reset";
+
 /**
  * Phase 4: the check-in flow driven through a real browser, with a fake
  * camera and a granted geolocation permission.
@@ -31,6 +33,10 @@ test.use({
     ],
   },
 });
+
+// This file and lunch.spec.ts both walk the same account through a day, so
+// neither may assume it ran first.
+test.beforeAll(resetAttendanceState);
 
 async function login(page: Page) {
   await page.goto("/login");

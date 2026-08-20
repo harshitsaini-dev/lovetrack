@@ -7,6 +7,7 @@ import {
   LogOut,
   MapPin,
   Utensils,
+  Video,
 } from "lucide-react";
 
 import { LocationMap } from "@/components/location/location-map";
@@ -47,22 +48,34 @@ export function TodayCard({
   attendance,
   events,
   timezone,
+  lunchProofDone,
 }: {
   attendance: Attendance | null;
   events: AttendanceEvent[];
   timezone: string;
+  lunchProofDone: boolean;
 }) {
   const status = attendance?.status ?? "not_started";
   const flagged = events.filter((e) => e.status !== "passed");
 
-  const nextAction =
+  // The primary action is whatever the day needs next. Lunch is optional,
+  // so once someone is checked in they get both choices rather than being
+  // funnelled through a meal they may have skipped.
+  const primary =
     status === "not_started"
       ? { href: "/app/check-in", label: "Check in", icon: Camera }
-      : status === "checked_in"
-        ? { href: "/app/check-out", label: "Check out", icon: LogOut }
-        : status === "lunch_verified"
-          ? { href: "/app/check-out", label: "Check out", icon: LogOut }
-          : null;
+      : status === "lunch_active"
+        ? { href: "/app/lunch", label: "Lunch end", icon: Utensils }
+        : status === "lunch_verified" && !lunchProofDone
+          ? { href: "/app/lunch", label: "Lunch proof record karein", icon: Video }
+          : status === "checked_in" || status === "lunch_verified"
+            ? { href: "/app/check-out", label: "Check out", icon: LogOut }
+            : null;
+
+  const secondary =
+    status === "checked_in"
+      ? { href: "/app/lunch", label: "Lunch start", icon: Utensils }
+      : null;
 
   return (
     <Card>
@@ -119,19 +132,33 @@ export function TodayCard({
           </div>
         )}
 
-        {nextAction ? (
-          <Button asChild size="lg" className="touch-target h-12 w-full">
-            <Link href={nextAction.href}>
-              <nextAction.icon className="size-4" aria-hidden />
-              {nextAction.label}
-            </Link>
-          </Button>
+        {primary ? (
+          <div className="space-y-2">
+            <Button asChild size="lg" className="touch-target h-12 w-full">
+              <Link href={primary.href}>
+                <primary.icon className="size-4" aria-hidden />
+                {primary.label}
+              </Link>
+            </Button>
+
+            {secondary && (
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="touch-target h-11 w-full"
+              >
+                <Link href={secondary.href}>
+                  <secondary.icon className="size-4" aria-hidden />
+                  {secondary.label}
+                </Link>
+              </Button>
+            )}
+          </div>
         ) : (
           <p className="flex items-center justify-center gap-2 py-1 text-sm text-muted-foreground">
             <Clock className="size-4" aria-hidden />
-            {status === "checked_out"
-              ? "Aaj ka din complete."
-              : "Lunch chal raha hai."}
+            Aaj ka din complete.
           </p>
         )}
       </CardContent>

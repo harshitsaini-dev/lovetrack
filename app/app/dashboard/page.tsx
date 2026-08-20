@@ -6,6 +6,7 @@ import {
 } from "@/components/attendance/today-card";
 import { requireProfile } from "@/lib/auth/session";
 import { getTodayAttendance } from "@/lib/attendance/queries";
+import { getTodayLunchProof } from "@/lib/lunch/queries";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -20,6 +21,9 @@ function greeting(hour: number): string {
 export default async function DashboardPage() {
   const profile = await requireProfile();
   const { attendance, events } = await getTodayAttendance(profile.timezone);
+  const lunchProof = attendance
+    ? await getTodayLunchProof(attendance.id)
+    : null;
 
   // Rendered on the server, in the user's own timezone — the client clock
   // is never authoritative anywhere in LoveTrack.
@@ -53,6 +57,7 @@ export default async function DashboardPage() {
         attendance={attendance}
         events={events}
         timezone={profile.timezone}
+        lunchProofDone={lunchProof !== null}
       />
 
       <TodayTimeline events={events} timezone={profile.timezone} />
