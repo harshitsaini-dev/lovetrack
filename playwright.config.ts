@@ -61,6 +61,11 @@ export default defineConfig({
     {
       name: "desktop",
       use: { ...devices["Desktop Chrome"] },
+      // The pairing tests drive two shared accounts through real
+      // server-side state. Running them again here would have the two
+      // projects fighting over the same pairing, so the mobile project —
+      // the primary target — owns them.
+      testIgnore: /pairing\.spec\.ts/,
     },
   ],
 

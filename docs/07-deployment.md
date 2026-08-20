@@ -15,7 +15,45 @@ Cloudflare Worker → security/API/cron
 Resend → emails
 ```
 
-Initial URL: `lovetrack.pages.dev` (custom domain baad me optional).
+## Target domain: `lovetrack.harshitsaini.in`
+
+**Verified 2026-08-20** (live DNS lookup):
+
+| Cheez | Status |
+|---|---|
+| Registrar | BigRock |
+| DNS | **Cloudflare** (`gabe.ns.cloudflare.com`, `sreeni.ns.cloudflare.com`) — BigRock sirf registrar hai |
+| `harshitsaini.in` | Next.js app, Cloudflare proxied (orange cloud) |
+| `admin.harshitsaini.in` | Next.js app, Cloudflare proxied |
+| `lovetrack.harshitsaini.in` | abhi exist nahi karta — ye humara target hai |
+| Vercel headers | **nahi mile** — yaani existing apps Cloudflare par hi chal rahe hain |
+
+Iska matlab: **nameservers already Cloudflare par hain, isliye subdomain add karna aasan hai.** BigRock me kuch nahi chhedna — sab Cloudflare dashboard se hoga.
+
+### Next.js 16 ko Cloudflare par kaise deploy karein
+
+Ye ek asli technical decision hai jo dhyan maangta hai:
+
+- `@cloudflare/next-on-pages` (purana Pages adapter) ab **deprecated** hai aur Next.js 16 App Router + Server Actions ke saath reliable nahi hai.
+- Current supported path: **`@opennextjs/cloudflare`**, jo app ko **Cloudflare Workers** par deploy karta hai (Pages par nahi).
+- LoveTrack me SSR, Server Actions, Route Handlers aur `proxy.ts` — sab hain, isliye static export bilkul possible nahi.
+
+**Recommended:** `@opennextjs/cloudflare` + Cloudflare Workers, custom domain `lovetrack.harshitsaini.in`.
+
+> ⚠️ **Pehle confirm karna hai:** `harshitsaini.in` aur `admin.harshitsaini.in` kis setup par chal rahe hain (Workers + OpenNext, ya Pages + next-on-pages)? Wahi pattern LoveTrack ke liye repeat karna sabse safe hoga — naya pattern seekhne ki zaroorat nahi padegi. Ye Phase 12 me confirm karenge.
+
+### Subdomain jodne ke steps (Phase 12)
+
+1. Cloudflare dashboard → Workers & Pages → LoveTrack project
+2. **Custom domains** → Add → `lovetrack.harshitsaini.in`
+3. Zone same account me hai, isliye Cloudflare **CNAME khud bana dega** — manually DNS record add karne ki zaroorat nahi
+4. SSL certificate automatically issue hoga (kuch minute lag sakte hain)
+5. Supabase → **Authentication → URL Configuration** update karo:
+   - Site URL: `https://lovetrack.harshitsaini.in`
+   - Redirect URLs me add karo: `https://lovetrack.harshitsaini.in/**`
+6. `NEXT_PUBLIC_APP_URL=https://lovetrack.harshitsaini.in` Cloudflare env vars me set karo (warna verification emails localhost par point karenge)
+
+Initial testing URL: `lovetrack.<something>.workers.dev` — custom domain uske baad.
 
 ## GitHub — status: **CLI already configured** ✅
 

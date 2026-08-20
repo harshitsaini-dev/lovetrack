@@ -9,6 +9,14 @@
 
 export type UserRole = "user" | "admin";
 export type AccountStatus = "active" | "suspended";
+export type PairStatus = "pending" | "accepted" | "rejected" | "revoked";
+
+/** What one user has chosen to share with their partner. */
+export type SharePermission =
+  | "attendance"
+  | "location"
+  | "lunch_proof"
+  | "leave";
 
 // Declared as a `type`, not an `interface`, on purpose: supabase-js requires
 // each Row to satisfy Record<string, unknown>, and interfaces do not get an
@@ -48,9 +56,65 @@ export type ProfileUpdate = Partial<
   >
 >;
 
+export type Pair = {
+  id: string;
+  requester_id: string;
+  receiver_id: string;
+  status: PairStatus;
+  created_at: string;
+  responded_at: string | null;
+  revoked_at: string | null;
+  revoked_by: string | null;
+};
+
+export type PairPermissions = {
+  id: string;
+  pair_id: string;
+  /** The user doing the sharing — only they may change this row. */
+  owner_id: string;
+  share_attendance: boolean;
+  share_location: boolean;
+  share_lunch_proof: boolean;
+  share_leave: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PairPermissionsUpdate = Partial<
+  Pick<
+    PairPermissions,
+    | "share_attendance"
+    | "share_location"
+    | "share_lunch_proof"
+    | "share_leave"
+  >
+>;
+
+/** Result codes from the `request_pairing` database function. */
+export type PairingRequestResult =
+  | "sent"
+  | "exists"
+  | "self"
+  | "unauthenticated";
+
 export type Database = {
   public: {
     Tables: {
+      pairs: {
+        Row: Pair;
+        Insert: Pick<Pair, "requester_id" | "receiver_id"> & Partial<Pair>;
+        Update: Partial<
+          Pick<Pair, "status" | "responded_at" | "revoked_at" | "revoked_by">
+        >;
+        Relationships: [];
+      };
+      pair_permissions: {
+        Row: PairPermissions;
+        Insert: Pick<PairPermissions, "pair_id" | "owner_id"> &
+          Partial<PairPermissions>;
+        Update: PairPermissionsUpdate;
+        Relationships: [];
+      };
       profiles: {
         Row: Profile;
         Insert: Pick<Profile, "id" | "email"> &
@@ -73,10 +137,37 @@ export type Database = {
         Args: { check_user_id?: string };
         Returns: boolean;
       };
+      is_paired_with: {
+        Args: { other_user_id: string };
+        Returns: boolean;
+      };
+      can_view_shared: {
+        Args: {
+          owner_user_id: string;
+          permission: string;
+          viewer_id?: string;
+        };
+        Returns: boolean;
+      };
+      request_pairing: {
+        Args: { target_email: string };
+        Returns: string;
+      };
+      get_pair_partners: {
+        Args: Record<string, never>;
+        Returns: {
+          pair_id: string;
+          partner_id: string;
+          full_name: string | null;
+          email: string;
+          avatar_url: string | null;
+        }[];
+      };
     };
     Enums: {
       user_role: UserRole;
       account_status: AccountStatus;
+      pair_status: PairStatus;
     };
     CompositeTypes: Record<never, never>;
   };

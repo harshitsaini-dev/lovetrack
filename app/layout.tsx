@@ -15,15 +15,35 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+const DESCRIPTION =
+  "Consent-based attendance and activity verification for couples and friends. Live camera proof, genuine location, and sharing you control.";
+
 export const metadata: Metadata = {
+  // Without this, the generated opengraph-image resolves to a relative URL
+  // and link previews come out blank.
+  metadataBase: new URL(APP_URL),
   title: {
     default: "LoveTrack",
     template: "%s · LoveTrack",
   },
-  description:
-    "Consent-based attendance and activity verification for couples and friends.",
+  description: DESCRIPTION,
   applicationName: "LoveTrack",
   manifest: "/manifest.json",
+  openGraph: {
+    type: "website",
+    siteName: "LoveTrack",
+    title: "LoveTrack",
+    description: DESCRIPTION,
+    url: APP_URL,
+    locale: "en_IN",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LoveTrack",
+    description: DESCRIPTION,
+  },
   appleWebApp: {
     capable: true,
     title: "LoveTrack",

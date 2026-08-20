@@ -41,15 +41,28 @@ own-profile edits allowed, cascade delete confirmed.
 
 ## PHASE 3 — Pairing + permissions
 
-**Status: [ ] pending**
+**Status: [x] COMPLETE**
 
 Tasks:
-- [ ] `pairs`, `pair_permissions` tables
-- [ ] Send / accept / reject / revoke pairing UI + API
-- [ ] Location-sharing toggle (per-pair granular)
-- [ ] "Stop Sharing" control always visible
+- [x] `pairs`, `pair_permissions` tables (migration 0003)
+- [x] `request_pairing()` — email lookup inside a SECURITY DEFINER function so the client never queries `profiles` by email, and unknown addresses return the same answer as real ones (no account enumeration)
+- [x] Send / withdraw / accept / decline / revoke, all through RLS-enforced updates
+- [x] Per-direction sharing: `share_attendance`, `share_location`, `share_lunch_proof`, `share_leave` — each user owns their own row
+- [x] Location sharing defaults to **off** (most sensitive field is opt-in)
+- [x] Always-visible "Sab sharing band karein" control
+- [x] `can_view_shared()` helper — the gate that Phases 4-6 will hang their RLS on
+- [x] `get_pair_partners()` (migration 0004) — partner identity without widening `profiles` RLS
+- [x] Fix for the re-pairing bug (migration 0005)
 
-Exit criteria: two accounts pair, one revokes, sharing stops immediately.
+Exit criteria: ✅ 24/24 RLS checks + 6 UI E2E tests pass; revoking stops sharing immediately.
+
+### Two bugs this phase found (both would have shipped)
+
+**1. Partner name/email never rendered.** `profiles` RLS only exposes your own row, so the partner lookup came back empty and `toView()` silently dropped every pair. Fixed by `get_pair_partners()`, which returns only the four fields the UI shows — rather than widening the profiles policy and exposing role, status and notification settings.
+
+**2. Re-pairing was impossible.** The `pairs` UPDATE policy pinned the members with a correlated subquery. It is evaluated as the calling user, so it returned one row while only one pair existed — and `21000: more than one row returned by a subquery` the moment the same two people had a second pair row. Since unpairing leaves a `revoked` row behind, **any couple could pair exactly once, ever**. Fixed in migration 0005 by moving immutability into a trigger, where a table invariant belongs.
+
+Both were invisible to API-level RLS testing (21/21 green) and only surfaced when the flow was driven through the UI with two real accounts. `scripts/verify-pairing-rls.mjs` now carries a regression check for the second one.
 
 ## PHASE 4 — Check-in/check-out + camera + location + nonce + server time
 
