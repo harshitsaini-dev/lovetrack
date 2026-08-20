@@ -45,15 +45,32 @@ npm run dev
 
 Open http://localhost:3000
 
+**Windows shortcuts** — double-click, ya terminal se:
+
+```bat
+start.bat     :: dev server start karo (port 3000)
+stop.bat      :: port par chal raha server band karo
+restart.bat   :: stop + start
+```
+
+Doosre port ke liye: `set PORT=4000 && start.bat`
+
 ### Scripts
 
 ```bash
-npm run dev        # dev server (Turbopack)
-npm run build      # production build
-npm run start      # serve production build
-npm run lint       # ESLint
-npm run typecheck  # tsc --noEmit
+npm run dev              # dev server (Turbopack)
+npm run build            # production build
+npm run start            # serve production build
+npm run lint             # ESLint
+npm run typecheck        # tsc --noEmit
+npm run test:e2e         # Playwright, mobile + desktop
+npm run test:e2e:mobile  # Playwright, phone viewport only
 ```
+
+### Database migrations
+
+`supabase/migrations/*.sql` ko order me Supabase SQL Editor me run karein
+(Dashboard → SQL Editor → New query → paste → Run).
 
 ## Environment variables
 

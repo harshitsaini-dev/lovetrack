@@ -23,16 +23,21 @@ Exit criteria: `npm run dev` chal raha ho, blank branded landing page render ho.
 
 ## PHASE 2 — Supabase Auth + DB + RLS + profile
 
-**Status: [ ] pending**
+**Status: [x] COMPLETE**
 
 Tasks:
-- [ ] Supabase project setup (manual action — account/keys)
-- [ ] Auth: email/password, forgot password, email verification
-- [ ] `profiles` table + RLS
-- [ ] Protected routes middleware
-- [ ] Role-based authorization scaffold (user/partner/admin)
+- [x] Supabase project setup (project `<project-ref>`, keys in `.env.local`)
+- [x] Migration `0001_profiles.sql` — enums, `profiles`, triggers, `is_admin()`, RLS
+- [x] Auth: email/password, forgot password, password reset, email verification
+- [x] Protected routes via `proxy.ts` (Next 16 renamed `middleware` → `proxy`)
+- [x] Role-based authorization scaffold (`user` / `admin`) + suspended-account handling
+- [x] `/auth/recover` self-heal route for profile-less accounts (prevents redirect loop)
+- [x] Mobile-first auth screens + app shell (bottom nav on phones, header nav on desktop)
+- [x] Playwright E2E suite — 24 tests passing on mobile + desktop
 
-Exit criteria: register → login → protected dashboard route access; RLS verified with two test users.
+Exit criteria: ✅ register → login → protected dashboard; RLS verified against live DB —
+role escalation blocked (403), self-unsuspend blocked (403), cross-user reads return nothing,
+own-profile edits allowed, cascade delete confirmed.
 
 ## PHASE 3 — Pairing + permissions
 
