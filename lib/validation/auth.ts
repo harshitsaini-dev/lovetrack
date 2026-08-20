@@ -46,6 +46,34 @@ export const registerSchema = z
 
 export const forgotPasswordSchema = z.object({ email });
 
+/**
+ * The emailed verification code.
+ *
+ * Length is not pinned to a number here on purpose — Supabase's OTP length
+ * is a project setting, and this one issues 8 digits rather than the more
+ * common 6. Hardcoding 6 would reject every real code.
+ */
+export const verifyCodeSchema = z.object({
+  email,
+  code: z
+    .string()
+    .trim()
+    // People paste codes with a stray space in the middle.
+    .transform((value) => value.replace(/\s+/g, ""))
+    .pipe(
+      z
+        .string()
+        .regex(/^\d{6,10}$/, "Code sirf 6-10 digits ka hota hai"),
+    ),
+  /** Signup confirmation, or a password reset. */
+  mode: z.enum(["signup", "recovery"]).default("signup"),
+});
+
+export const resendCodeSchema = z.object({
+  email,
+  mode: z.enum(["signup", "recovery"]).default("signup"),
+});
+
 export const resetPasswordSchema = z
   .object({
     password,
@@ -60,3 +88,5 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type VerifyCodeInput = z.infer<typeof verifyCodeSchema>;
+export type ResendCodeInput = z.infer<typeof resendCodeSchema>;

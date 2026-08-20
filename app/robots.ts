@@ -24,7 +24,8 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [
           "/app/", // every signed-in page
           "/admin/", // the admin panel
-          "/auth/", // one-time confirmation and recovery tokens
+          "/auth/", // profile-repair route
+          "/verify", // carries an email address in the query string
           "/reset-password",
           "/suspended",
           "/forbidden",

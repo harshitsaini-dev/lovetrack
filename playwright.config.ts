@@ -27,9 +27,23 @@ const headed =
 export default defineConfig({
   testDir: "./tests/e2e",
 
-  // When watching, run one test at a time so windows don't fight for focus.
-  fullyParallel: !headed,
-  workers: headed ? 1 : isCI ? 1 : undefined,
+  /*
+   * One worker, always.
+   *
+   * The suite drives shared server-side state through a small number of
+   * real accounts: one E2E user, one partner, one attendance day, one
+   * pairing. profile.spec changes that user's name and password while
+   * other specs are signing in as them, and attendance/lunch/leave each
+   * walk the same account through the same day.
+   *
+   * Headed runs and CI were already serial; only a local headless run was
+   * not, and it failed in a thoroughly misleading way — logins that
+   * silently produced no session, which reads as broken auth rather than
+   * as two tests fighting over one account. Parallelism here would need
+   * an account per worker, not a bigger timeout.
+   */
+  fullyParallel: false,
+  workers: 1,
 
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
@@ -48,6 +62,15 @@ export default defineConfig({
     // Give a watched run room to breathe before failing an assertion.
     actionTimeout: headed ? 15_000 : 10_000,
   },
+
+  /*
+   * Playwright's default expect timeout is 5s, which was left below
+   * actionTimeout by oversight. It only bites in a parallel run against the
+   * dev server, where a route is compiled on first request and a navigation
+   * assertion can legitimately outlast five seconds — producing failures
+   * that look like broken auth and disappear at --workers=1.
+   */
+  expect: { timeout: headed ? 15_000 : 10_000 },
 
   projects: [
     {

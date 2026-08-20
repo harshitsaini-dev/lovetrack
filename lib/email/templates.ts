@@ -57,6 +57,83 @@ function wrap({ heading, body, cta, footnote }: Layout): string {
 
 export type EmailContent = { subject: string; html: string; text: string };
 
+/**
+ * The code block used by both verification emails.
+ *
+ * Rendered as text, not an image — an image would be blocked by default in
+ * most inboxes, and a code nobody can read is a code nobody can use.
+ * `letter-spacing` is what makes 8 digits readable at a glance.
+ */
+function codeBlock(code: string): string {
+  return `<div style="margin:22px 0;padding:16px;border-radius:10px;background:${BG};text-align:center;">
+    <span style="font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:30px;font-weight:600;letter-spacing:6px;color:${INK};">${code}</span>
+  </div>`;
+}
+
+/**
+ * Signup verification.
+ *
+ * A code rather than a link, deliberately. Corporate mail scanners and link
+ * previewers fetch every URL in an incoming message, and a one-time
+ * confirmation link is consumed by that fetch — the real person then clicks
+ * it and is told it already expired. A code cannot be spent by a machine
+ * that merely reads the email.
+ */
+export function verificationCodeEmail(
+  name: string | null,
+  code: string,
+  minutes: number,
+): EmailContent {
+  const who = name?.split(" ")[0] ?? "there";
+
+  return {
+    // The code is deliberately NOT in the subject, tempting as that is for
+    // the notification preview. `sendEmail` writes every subject to
+    // `email_logs`, which admins can read — putting it there would let any
+    // admin read a code and take over the account. Only the body carries
+    // it, and the body is never stored.
+    subject: "LoveTrack verification code",
+    html: wrap({
+      heading: `${who}, ye raha aapka code`,
+      body: `<p style="margin:0;">App me ye code daal dein — account verify ho jayega.</p>
+             ${codeBlock(code)}
+             <p style="margin:0;">Code ${minutes} minute me expire ho jaata hai.</p>`,
+      footnote:
+        "Agar aapne LoveTrack par account nahi banaya, to is email ko ignore kar dein — code ke bina kuch nahi hota.",
+    }),
+    text: `${who}, ye raha aapka code: ${code}\n\nApp me ye code daal dein. ${minutes} minute me expire ho jaata hai.\n\nAgar aapne account nahi banaya to ise ignore kar dein.`,
+  };
+}
+
+/**
+ * Password reset code.
+ *
+ * Says nothing about whether the account exists beyond the fact that the
+ * mail arrived — someone who did not request this learns only that somebody
+ * typed their address in, which they can safely ignore.
+ */
+export function passwordResetCodeEmail(
+  name: string | null,
+  code: string,
+  minutes: number,
+): EmailContent {
+  const who = name?.split(" ")[0] ?? "there";
+
+  return {
+    // Same reasoning as above — the code stays out of the logged subject.
+    subject: "LoveTrack password reset code",
+    html: wrap({
+      heading: `${who}, password reset ka code`,
+      body: `<p style="margin:0;">Naya password set karne ke liye ye code daalein.</p>
+             ${codeBlock(code)}
+             <p style="margin:0;">Code ${minutes} minute me expire ho jaata hai.</p>`,
+      footnote:
+        "Agar aapne password reset request nahi kiya, to is email ko ignore kar dein — aapka password waisa hi rahega.",
+    }),
+    text: `${who}, password reset ka code: ${code}\n\n${minutes} minute me expire ho jaata hai.\n\nAgar aapne reset request nahi kiya to ise ignore kar dein — password waisa hi rahega.`,
+  };
+}
+
 export function welcomeEmail(name: string | null, appUrl: string): EmailContent {
   const who = name?.split(" ")[0] ?? "there";
 

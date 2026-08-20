@@ -8,6 +8,8 @@ LoveTrack ek hidden tracking app **nahi** hai. Har user ko clearly pata hota hai
 
 ## Features
 
+- **OTP-based email verification** — koi confirmation link nahi, sirf code. Mail scanners aur link previewers har incoming URL ko fetch kar lete hain, jisse one-time link asli banda click kare usse pehle hi kharch ho jaata hai (`otp_expired`). Code ko sirf padhne se koi machine kharch nahi kar sakti.
+- **Saare auth emails apne domain se** — Supabase ka built-in mailer bilkul use nahi hota. Codes admin API se mint hote hain aur apne Resend template se jaate hain, `email_logs` me record hoke.
 - **Live camera proof** — attendance sirf `getUserMedia()` se, koi gallery/file upload nahi
 - **Location kahin se bhi** — koi fixed geofence nahi; validation sirf ye hai ki us waqt ki location genuine aur accurate ho
 - **One-time capture** — location sirf check-in/check-out/lunch ke exact moment par li jaati hai, uske baad kabhi nahi
@@ -70,7 +72,7 @@ npm run lint             # ESLint
 npm run typecheck        # tsc --noEmit
 npm run test             # Vitest — pure logic (time, validation, CSP, prompts)
 npm run check            # typecheck + lint + unit tests + build, in order
-npm run verify:all       # 167 adversarial checks against the real database
+npm run verify:all       # 185 adversarial checks against the real database
 npm run test:e2e          # Playwright — opens a real browser you can watch
 npm run test:e2e:mobile   # phone viewport only
 npm run test:e2e:ui       # Playwright's interactive UI mode
@@ -100,6 +102,8 @@ Har feature teen jagah verify hota hai, kyunki teeno alag tarah ke bug pakadte h
 | **Vitest** (`tests/unit/`) | Pure logic — timezone formatting, Zod schemas, CSP builder, camera prompts | Galat jawab jo database ya browser par depend nahi karta |
 | **Verify scripts** (`scripts/verify-*.mjs`) | Seedha Supabase par, adversarially — "kya partner doosre ka data padh sakta hai?" | RLS holes, SECURITY DEFINER leaks, rate-limit bypass |
 | **Playwright** (`tests/e2e/`) | Asli browser, phone viewport, fake camera | UI jo sahi data ko silently drop kar de |
+
+E2E suite **hamesha ek worker** par chalta hai. Ye speed ki kurbani jaan-boojhkar hai: saare specs ek hi asli account ko drive karte hain — `profile.spec` uska naam aur password badalta hai jabki doosre usse login kar rahe hote hain. Parallel chalane par login chupchaap bina session ke return hone lagta hai, jo "auth toot gaya" jaisa dikhta hai, jabki asal me do tests ek account par lad rahe hote hain. Iska sahi ilaaj per-worker account hai, bada timeout nahi.
 
 Ye teeno zaroori hain. Ek baar RLS scripts 21/21 green the jabki partner page har pair chupchaap drop kar raha tha — sirf E2E ne pakda. Ulta bhi hua hai.
 
@@ -144,6 +148,7 @@ Admin panel me: `/admin` (stats), `/admin/users`, `/admin/review` (flagged event
 
 - **Server-authoritative time.** Attendance timestamp hamesha database ka `now()` hai, device ka clock nahi.
 - **Nonce + replay protection.** Har capture ke liye ek short-lived nonce, ek hi baar use hota hai.
+- **Verification codes kabhi email subject me nahi jaate.** `sendEmail` har subject `email_logs` me likhta hai aur admin wo table padh sakte hain — code subject me hota to koi bhi admin doosre ka reset code padh ke account le leta. Code sirf body me hai, aur body store hi nahi hoti.
 - **RLS everywhere.** Har table par row level security; partner ko coordinates ka **direct read access nahi** hai — sab kuch `SECURITY DEFINER` functions se jaata hai jo permission check karte hain.
 - **CSP with per-request nonce + `strict-dynamic`.** `unsafe-inline` kahin nahi.
 - **Permissions-Policy.** Sirf camera, microphone, geolocation — baaki har sensor band.

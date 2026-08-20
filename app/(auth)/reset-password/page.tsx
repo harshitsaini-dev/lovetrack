@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 };
 
 export default async function ResetPasswordPage() {
-  // Reaching this page requires the recovery session created by
-  // /auth/confirm. Without it there is nothing to reset.
+  // Reaching this page requires the recovery session created by redeeming
+  // a reset code on /verify. Without it there is nothing to reset.
   const user = await getCurrentUser();
 
   if (!user) {

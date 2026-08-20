@@ -11,30 +11,12 @@ import { Label } from "@/components/ui/label";
 import { register, type AuthFormState } from "@/lib/auth/actions";
 
 export function RegisterForm() {
+  // On success the action redirects to /verify from the server, so there is
+  // no success state to render here — only errors ever come back.
   const [state, formAction] = useActionState<AuthFormState, FormData>(
     register,
     null,
   );
-
-  // On success the user must go verify their email — keep the form hidden
-  // so they don't try to sign up twice.
-  if (state?.ok) {
-    return (
-      <div className="space-y-4">
-        <FormMessage state={state} />
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          Email nahi mila? Spam folder check karein. Link 24 ghante me expire
-          ho jaata hai.
-        </p>
-        <Link
-          href="/login"
-          className="inline-block rounded text-sm font-medium text-primary hover:underline"
-        >
-          Login page par jaayein
-        </Link>
-      </div>
-    );
-  }
 
   return (
     <form action={formAction} className="space-y-4" noValidate>

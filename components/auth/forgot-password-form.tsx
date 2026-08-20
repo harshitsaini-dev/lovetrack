@@ -10,6 +10,9 @@ import { Label } from "@/components/ui/label";
 import { requestPasswordReset, type AuthFormState } from "@/lib/auth/actions";
 
 export function ForgotPasswordForm() {
+  // The action redirects to the code screen from the server — for every
+  // address, registered or not, so this form reveals nothing about who has
+  // an account. Only errors come back here.
   const [state, formAction] = useActionState<AuthFormState, FormData>(
     requestPasswordReset,
     null,
@@ -38,8 +41,8 @@ export function ForgotPasswordForm() {
             />
           </div>
 
-          <SubmitButton pendingLabel="Link bhej rahe hain...">
-            Reset link bhejein
+          <SubmitButton pendingLabel="Code bhej rahe hain...">
+            Reset code bhejein
           </SubmitButton>
         </>
       )}

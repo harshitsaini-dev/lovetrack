@@ -28,9 +28,26 @@ Last updated: 2026-08-20
 | Layer | Result |
 |---|---|
 | `npm run check` (typecheck + lint + unit + build) | âœ… exit 0 |
-| Vitest unit tests | **49/49** |
-| `npm run verify:all` â€” database-level, adversarial | **167/167** |
-| Playwright E2E (mobile-first, headed) | **97/97** |
+| Vitest unit tests | **70/70** |
+| `npm run verify:all` â€” database-level, adversarial | **185/185** |
+| Playwright E2E (mobile-first, headed) | **103/103** |
+
+### Auth: link se OTP par shift (20 Aug 2026)
+
+Live jaane ke baad pehla asli bug: confirmation link `otp_expired` de raha tha. Wajah link ka design hai â€” mail scanners aur link previewers har incoming URL fetch kar lete hain, aur one-time token usi fetch me kharch ho jaata hai; asli banda click kare tab tak wo ja chuka hota hai.
+
+Ab **koi confirmation link bheja hi nahi jaata.** Signup aur password reset dono OTP code par hain, aur **Supabase ka built-in mailer bilkul use nahi hota**:
+
+- `admin.createUser` (`signUp` nahi) â€” taaki Supabase apni mail na bheje
+- `admin.generateLink` code deta hai aur kuch bhejta nahi
+- Code apne Resend template se jaata hai, `email_logs` me record hoke
+- `verifyOtp` code redeem karta hai â€” signup me address confirm + session, recovery me reset session
+- `/auth/confirm` route delete ho gaya
+
+Do cheezein is kaam me pakdi gayin:
+
+1. **Code email subject me tha.** `sendEmail` har subject `email_logs` me likhta hai aur admin wo padh sakte hain â€” yaani koi bhi admin doosre ka reset code padh ke uska account le sakta tha, bina koi nishaan chhode. Subject ab generic hai; code sirf body me hai aur body store nahi hoti.
+2. **React 19 form action ke baad uncontrolled fields reset kar deta hai.** Client-side redirect email input padh raha tha, jo tab tak khaali ho chuka hota tha â€” `/verify` bina address ke `/login` bhej deta tha. Ab teeno redirect server-side `redirect()` se hote hain.
 
 **Verification scripts** (`npm run verify:*`):
 
@@ -44,6 +61,7 @@ Last updated: 2026-08-20
 | `verify-retention.mjs` | 20 |
 | `verify-admin.mjs` | 25 |
 | `verify-hardening.mjs` | 20 |
+| `verify-otp-auth.mjs` | 18 |
 
 ### Phase 12 me ek plan badla
 

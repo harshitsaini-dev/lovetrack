@@ -31,6 +31,13 @@ export const LIMITS = {
   login: { max: 6, windowSeconds: 60 },
   register: { max: 4, windowSeconds: 300 },
   passwordReset: { max: 3, windowSeconds: 900 },
+  // A verification code is guessable by brute force in a way a password is
+  // not — the search space is only ten million. This limit is the thing
+  // that makes an emailed code safe, not the code's length.
+  otpVerify: { max: 6, windowSeconds: 600 },
+  // Resending is free to ask for and costs us an email each time, so it is
+  // both a spam vector against the recipient and a way to burn quota.
+  otpResend: { max: 3, windowSeconds: 600 },
   passwordChange: { max: 5, windowSeconds: 300 },
   // Pairing is the account-enumeration surface: the reply is deliberately
   // identical for known and unknown addresses, so the only thing left to
