@@ -61,11 +61,12 @@ export default defineConfig({
     {
       name: "desktop",
       use: { ...devices["Desktop Chrome"] },
-      // The pairing tests drive two shared accounts through real
-      // server-side state. Running them again here would have the two
-      // projects fighting over the same pairing, so the mobile project —
-      // the primary target — owns them.
-      testIgnore: /pairing\.spec\.ts/,
+      // These suites drive shared accounts through real server-side state:
+      // one pairing, one attendance day. Running them again here would have
+      // the two projects fighting over the same records — the second run
+      // finds the day already checked in. The mobile project, the primary
+      // target, owns them; everything else still runs on both.
+      testIgnore: /(pairing|attendance)\.spec\.ts/,
     },
   ],
 

@@ -7,6 +7,13 @@
  *   npx supabase gen types typescript --project-id <ref> > types/database.ts
  */
 
+import type {
+  Attendance,
+  AttendanceEvent,
+  AttendanceEventType,
+  SystemSettings,
+} from "@/types/attendance";
+
 export type UserRole = "user" | "admin";
 export type AccountStatus = "active" | "suspended";
 export type PairStatus = "pending" | "accepted" | "rejected" | "revoked";
@@ -100,6 +107,54 @@ export type PairingRequestResult =
 export type Database = {
   public: {
     Tables: {
+      attendance: {
+        Row: Attendance;
+        // Rows are written only by record_attendance_event(); there is no
+        // INSERT/UPDATE policy, so these exist purely to satisfy the client
+        // type and are never used.
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      attendance_events: {
+        Row: AttendanceEvent;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      attendance_nonces: {
+        Row: {
+          id: string;
+          user_id: string;
+          event_type: AttendanceEventType;
+          created_at: string;
+          expires_at: string;
+          used_at: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      risk_events: {
+        Row: {
+          id: string;
+          user_id: string;
+          attendance_event_id: string | null;
+          signal: string;
+          detail: string | null;
+          points: number;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      system_settings: {
+        Row: SystemSettings;
+        Insert: never;
+        Update: Partial<Omit<SystemSettings, "id" | "updated_at">>;
+        Relationships: [];
+      };
       pairs: {
         Row: Pair;
         Insert: Pick<Pair, "requester_id" | "receiver_id"> & Partial<Pair>;
@@ -162,6 +217,25 @@ export type Database = {
           email: string;
           avatar_url: string | null;
         }[];
+      };
+      issue_attendance_nonce: {
+        Args: { p_event_type: AttendanceEventType };
+        Returns: string;
+      };
+      record_attendance_event: {
+        Args: {
+          p_nonce: string;
+          p_event_type: AttendanceEventType;
+          p_latitude: number;
+          p_longitude: number;
+          p_accuracy_m: number;
+          p_fix_age_s: number;
+          p_photo_path?: string | null;
+          p_place_label?: string | null;
+          p_device_label?: string | null;
+          p_ip_hash?: string | null;
+        };
+        Returns: unknown;
       };
     };
     Enums: {

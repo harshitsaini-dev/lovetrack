@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
-import { Camera, CircleDot, Clock, Utensils } from "lucide-react";
 
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  TodayCard,
+  TodayTimeline,
+} from "@/components/attendance/today-card";
 import { requireProfile } from "@/lib/auth/session";
+import { getTodayAttendance } from "@/lib/attendance/queries";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -16,6 +19,7 @@ function greeting(hour: number): string {
 
 export default async function DashboardPage() {
   const profile = await requireProfile();
+  const { attendance, events } = await getTodayAttendance(profile.timezone);
 
   // Rendered on the server, in the user's own timezone — the client clock
   // is never authoritative anywhere in LoveTrack.
@@ -45,38 +49,13 @@ export default async function DashboardPage() {
         </h1>
       </header>
 
-      <Card>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <CircleDot className="size-4 text-status-off" aria-hidden />
-            Aaj abhi tak koi activity nahi
-          </div>
+      <TodayCard
+        attendance={attendance}
+        events={events}
+        timezone={profile.timezone}
+      />
 
-          <ul className="space-y-2.5 text-sm text-muted-foreground">
-            <li className="flex items-center gap-2.5">
-              <Camera className="size-4 shrink-0" aria-hidden />
-              Check-in pending
-            </li>
-            <li className="flex items-center gap-2.5">
-              <Utensils className="size-4 shrink-0" aria-hidden />
-              Lunch pending
-            </li>
-            <li className="flex items-center gap-2.5">
-              <Clock className="size-4 shrink-0" aria-hidden />
-              Check-out pending
-            </li>
-          </ul>
-        </CardContent>
-      </Card>
-
-      <Card className="border-dashed bg-transparent shadow-none">
-        <CardContent>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            Check-in, lunch proof aur partner activity Phase 4 aur 5 me aayenge.
-            Abhi auth, profile aur security foundation ready hai.
-          </p>
-        </CardContent>
-      </Card>
+      <TodayTimeline events={events} timezone={profile.timezone} />
     </div>
   );
 }

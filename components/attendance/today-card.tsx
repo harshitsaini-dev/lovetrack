@@ -1,0 +1,223 @@
+import Link from "next/link";
+import {
+  AlertTriangle,
+  Camera,
+  Check,
+  Clock,
+  LogOut,
+  MapPin,
+  Utensils,
+} from "lucide-react";
+
+import { LocationMap } from "@/components/location/location-map";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { EVENT_LABELS } from "@/lib/attendance/messages";
+import { cn } from "@/lib/utils";
+import type {
+  Attendance,
+  AttendanceEvent,
+  AttendanceEventType,
+} from "@/types/attendance";
+
+function formatTime(iso: string | null, timezone: string): string | null {
+  if (!iso) return null;
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: timezone,
+  }).format(new Date(iso));
+}
+
+const STEPS: {
+  type: AttendanceEventType;
+  icon: typeof Camera;
+  at: keyof Pick<
+    Attendance,
+    "check_in_at" | "lunch_started_at" | "lunch_verified_at" | "check_out_at"
+  >;
+}[] = [
+  { type: "check_in", icon: Camera, at: "check_in_at" },
+  { type: "lunch_start", icon: Utensils, at: "lunch_started_at" },
+  { type: "lunch_end", icon: Utensils, at: "lunch_verified_at" },
+  { type: "check_out", icon: LogOut, at: "check_out_at" },
+];
+
+export function TodayCard({
+  attendance,
+  events,
+  timezone,
+}: {
+  attendance: Attendance | null;
+  events: AttendanceEvent[];
+  timezone: string;
+}) {
+  const status = attendance?.status ?? "not_started";
+  const flagged = events.filter((e) => e.status !== "passed");
+
+  const nextAction =
+    status === "not_started"
+      ? { href: "/app/check-in", label: "Check in", icon: Camera }
+      : status === "checked_in"
+        ? { href: "/app/check-out", label: "Check out", icon: LogOut }
+        : status === "lunch_verified"
+          ? { href: "/app/check-out", label: "Check out", icon: LogOut }
+          : null;
+
+  return (
+    <Card>
+      <CardContent className="space-y-4">
+        <ol className="space-y-2.5">
+          {STEPS.map(({ type, icon: Icon, at }) => {
+            const time = attendance ? formatTime(attendance[at], timezone) : null;
+            const done = Boolean(time);
+
+            return (
+              <li key={type} className="flex items-center gap-2.5 text-sm">
+                <span
+                  className={cn(
+                    "flex size-7 shrink-0 items-center justify-center rounded-full",
+                    done
+                      ? "bg-status-active/15 text-status-active"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {done ? (
+                    <Check className="size-3.5" aria-hidden />
+                  ) : (
+                    <Icon className="size-3.5" aria-hidden />
+                  )}
+                </span>
+
+                <span className={cn("flex-1", !done && "text-muted-foreground")}>
+                  {EVENT_LABELS[type]}
+                </span>
+
+                <span
+                  className={cn(
+                    "tabular-nums",
+                    done ? "font-medium" : "text-muted-foreground",
+                  )}
+                >
+                  {time ?? "—"}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+
+        {flagged.length > 0 && (
+          <div className="flex items-start gap-2 rounded-lg bg-status-warn/10 p-2.5">
+            <AlertTriangle
+              className="mt-0.5 size-4 shrink-0 text-status-warn"
+              aria-hidden
+            />
+            <p className="text-xs text-muted-foreground">
+              {flagged.length} submission review ke liye flag hui{" "}
+              {flagged.length > 1 ? "hain" : "hai"}.
+            </p>
+          </div>
+        )}
+
+        {nextAction ? (
+          <Button asChild size="lg" className="touch-target h-12 w-full">
+            <Link href={nextAction.href}>
+              <nextAction.icon className="size-4" aria-hidden />
+              {nextAction.label}
+            </Link>
+          </Button>
+        ) : (
+          <p className="flex items-center justify-center gap-2 py-1 text-sm text-muted-foreground">
+            <Clock className="size-4" aria-hidden />
+            {status === "checked_out"
+              ? "Aaj ka din complete."
+              : "Lunch chal raha hai."}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Compact list of today's events with their captured places. */
+export function TodayTimeline({
+  events,
+  timezone,
+}: {
+  events: AttendanceEvent[];
+  timezone: string;
+}) {
+  if (!events.length) return null;
+
+  const located = events.filter(
+    (e): e is AttendanceEvent & { latitude: number; longitude: number } =>
+      e.latitude !== null && e.longitude !== null,
+  );
+
+  return (
+    <Card>
+      <CardContent className="space-y-3">
+        <h2 className="text-sm font-medium">Aaj ki timeline</h2>
+
+        {located.length > 0 && (
+          <LocationMap
+            points={located.map((e) => ({
+              latitude: e.latitude,
+              longitude: e.longitude,
+              accuracyM: e.accuracy_m,
+              label: `${EVENT_LABELS[e.event_type]}${
+                e.place_label ? ` · ${e.place_label}` : ""
+              }`,
+            }))}
+            className="h-48"
+          />
+        )}
+
+        <ul className="space-y-3">
+          {events.map((event) => (
+            <li key={event.id} className="flex items-start gap-2.5 text-sm">
+              <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
+
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">
+                  {EVENT_LABELS[event.event_type]}
+                  {event.status !== "passed" && (
+                    <span className="ml-2 text-xs font-normal text-status-warn">
+                      {event.status === "rejected" ? "rejected" : "flagged"}
+                    </span>
+                  )}
+                </p>
+
+                {event.latitude !== null && (
+                  <>
+                    {/*
+                      Place name first — it is what a person actually reads.
+                      The coordinates stay visible underneath because they
+                      are the record, and the accuracy is part of the claim.
+                    */}
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="size-3 shrink-0" aria-hidden />
+                      <span className="truncate">
+                        {event.place_label ?? "Jagah ka naam nahi mila"}
+                      </span>
+                    </p>
+                    <p className="pl-4 text-xs tabular-nums text-muted-foreground/80">
+                      {event.latitude.toFixed(5)},{" "}
+                      {event.longitude?.toFixed(5)}
+                      {event.accuracy_m !== null &&
+                        ` · ±${Math.round(event.accuracy_m)}m`}
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <span className="shrink-0 tabular-nums text-xs text-muted-foreground">
+                {formatTime(event.server_timestamp, timezone)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}

@@ -66,22 +66,85 @@ Both were invisible to API-level RLS testing (21/21 green) and only surfaced whe
 
 ## PHASE 4 — Check-in/check-out + camera + location + nonce + server time
 
-**Status: [ ] pending**
+**Status: [x] COMPLETE**
+
+### The central design decision
+
+**A client cannot write an attendance record.** `attendance` and
+`attendance_events` have no INSERT or UPDATE policy at all. The only way in is
+`record_attendance_event()`, which in a single transaction consumes the nonce,
+enforces the state machine, scores the risk and stamps the time.
+
+The client supplies raw signals it inherently owns — coordinates from the
+device, a photo it just captured. It never supplies conclusions. A client that
+lies about `accuracy_m` is scored on the value it sent; one that tries to send
+`verification_status` finds it is not an input.
+
+### What is checked
+
+| Signal | Outcome |
+|---|---|
+| accuracy > 100m | rejected |
+| accuracy > 50m | +25, flagged if alone with others |
+| fix older than 30s | rejected — a cached fix is the easiest way to submit a place you have left |
+| implied speed > 900 km/h | +40 |
+| coordinates identical to previous | +15 (see migration 0008) |
+| score ≥ 30 / ≥ 80 | flagged / rejected |
+
+Every contributing signal is written to `risk_events`, so a score is always
+explainable to the user and to an admin.
+
+### Other decisions worth remembering
+
+- **Nonce**: 3-minute TTL, single use, bound to both the user and the specific
+  action. Issued immediately before submission rather than on page load.
+- **`maximumAge: 0`** on the geolocation call. Without it the browser returns a
+  cached fix and the entire location check quietly becomes theatre.
+- **No file input anywhere in the flow.** If the camera cannot open, the flow
+  stops with an explanation rather than falling back to "pick an image" — that
+  fallback would hand back exactly the capability the design removes.
+- **Challenge phrase** is a deterrent, not proof: nothing verifies it was
+  actually shown. Deterministic per user per day so a refresh does not change it.
+- **Photos are not shared with partners.** They are anti-fraud evidence, not
+  part of an activity feed — user and admin only.
+- **Place names, not coordinates**, lead the UI. Reverse geocoding runs
+  server-side (Nominatim asks for an identifying User-Agent and ≤1 req/sec,
+  neither of which is possible from the browser), with a cache and graceful
+  failure. Coordinates and accuracy stay visible underneath, and a Leaflet map
+  shows the accuracy circle — the honest part of the picture.
+
+### Bugs found while testing
+
+**The result screen was being destroyed before it could be read.** Both
+`router.refresh()` and `revalidatePath()` inside the action re-render the
+capture page, whose guard then sees the day has moved on and redirects to the
+dashboard. The user completed a check-in and was bounced away without ever
+seeing their verification signals. Neither is needed: these pages are dynamic,
+so there is no cached render to invalidate.
+
+**Zero-drift scoring flagged honest users.** It was worth 30 points, which on
+its own crossed the flag threshold. The reasoning — real GPS always jitters —
+holds for a phone but not for a laptop positioned by Wi-Fi, which returns
+byte-identical coordinates. Reduced to 15 in migration 0008, and the point
+values moved into `system_settings` so future tuning is a settings change.
 
 Tasks:
-- [ ] `getUserMedia()` camera capture flow (no file input)
-- [ ] Canvas frame capture + compression
-- [ ] Geolocation capture (lat/lng/accuracy/heading/speed)
-- [ ] Server-authoritative timestamp
-- [ ] Nonce generation + replay protection
-- [ ] Device registration (WebCrypto key if feasible)
-- [ ] Location genuineness validation (accuracy limit, fix-age limit, plausible-speed, no-drift detection) — **no geofence**
-- [ ] Reverse geocoding for human-readable place name
-- [ ] Risk scoring engine (initial version)
-- [ ] `attendance`, `attendance_verifications` tables wired
-- [ ] Random challenge (phrase/head-turn) — configurable
+- [x] `getUserMedia()` camera capture flow — no file input, no fallback
+- [x] Canvas frame capture + WebP compression (~50KB)
+- [x] One-time geolocation capture with `maximumAge: 0`
+- [x] Server-authoritative timestamp
+- [x] Single-use nonce + replay protection
+- [x] Location genuineness validation — **no geofence**
+- [x] Reverse geocoding (server-side, cached, rate-limited)
+- [x] Leaflet map with accuracy circle
+- [x] Risk scoring engine with per-signal explanations
+- [x] `attendance`, `attendance_events`, `attendance_nonces`, `risk_events`, `system_settings` (migrations 0006, 0008)
+- [x] Private photo storage with per-user path policies (migration 0007)
+- [x] Daily challenge phrase
+- [x] Dashboard, history, check-in and check-out screens
+- [ ] Device binding via WebCrypto key — deferred to Phase 9; a device label is recorded now
 
-Exit criteria: check-in/check-out round-trip works, gallery upload rejected, bad accuracy flagged, duplicate nonce rejected.
+Exit criteria: ✅ 24/24 adversarial API checks + 6 UI E2E tests; 42 E2E total.
 
 ## PHASE 5 — Lunch recording + R2
 
