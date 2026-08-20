@@ -5,6 +5,7 @@ import Image from "next/image";
 import { AlertTriangle, Eye, Loader2, MapPin } from "lucide-react";
 
 import { LocationMap } from "@/components/location/location-map";
+import { MapLink } from "@/components/location/map-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getEvidenceUrl } from "@/lib/admin/actions";
@@ -87,17 +88,26 @@ export function FlaggedEventCard({ event }: { event: FlaggedEvent }) {
         )}
 
         {event.latitude !== null && event.longitude !== null && (
-          <LocationMap
-            points={[
-              {
-                latitude: event.latitude,
-                longitude: event.longitude,
-                accuracyM: event.accuracy_m,
-                label: event.place_label,
-              },
-            ]}
-            className="h-36"
-          />
+          <>
+            <LocationMap
+              points={[
+                {
+                  latitude: event.latitude,
+                  longitude: event.longitude,
+                  accuracyM: event.accuracy_m,
+                  label: event.place_label,
+                },
+              ]}
+              className="h-36"
+            />
+            {/* The inline map is a preview; checking a suspicious capture
+                usually means looking at the surroundings properly. */}
+            <MapLink
+              latitude={event.latitude}
+              longitude={event.longitude}
+              label={event.place_label ?? "Maps me kholein"}
+            />
+          </>
         )}
 
         {event.photo_path && !photoUrl && (

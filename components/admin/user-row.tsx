@@ -1,7 +1,13 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { AlertTriangle, ShieldCheck, ShieldOff } from "lucide-react";
+import Link from "next/link";
+import {
+  AlertTriangle,
+  ChevronRight,
+  ShieldCheck,
+  ShieldOff,
+} from "lucide-react";
 
 import { FormMessage } from "@/components/auth/form-message";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -81,6 +87,14 @@ export function UserRow({ user }: { user: AdminUser }) {
             </span>
           )}
         </div>
+
+        <Link
+          href={`/admin/users/${user.id}`}
+          className="flex touch-target items-center justify-between rounded-md text-sm font-medium text-primary"
+        >
+          Poora record aur media dekhein
+          <ChevronRight className="size-4" aria-hidden />
+        </Link>
 
         {user.flagged_30d > 0 && (
           <p className="flex items-center gap-1.5 text-xs text-status-warn">

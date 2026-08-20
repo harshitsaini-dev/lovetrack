@@ -13,6 +13,7 @@ import {
   getPartnerEvents,
   getPartnerDays,
   getPartnerLeave,
+  getPartnerLunchProofs,
   getPartnerPermissions,
 } from "@/lib/partner/queries";
 
@@ -30,18 +31,23 @@ export const metadata: Metadata = {
 async function loadActivity(view: PairView, today: string) {
   const partnerId = view.partner.id;
 
-  const [permissions, days, events, leave] = await Promise.all([
+  const [permissions, days, events, leave, lunchProofs] = await Promise.all([
     getPartnerPermissions(partnerId),
     getPartnerDays(partnerId, 1),
     getPartnerEvents(partnerId, today),
     getPartnerLeave(partnerId, 5),
+    getPartnerLunchProofs(partnerId, today),
   ]);
+
+  const day = days.find((d) => d.attendance_date === today) ?? null;
 
   return {
     permissions,
-    today: days.find((d) => d.attendance_date === today) ?? null,
+    today: day,
     events,
     leaveToday: leave.find((l) => l.leave_date === today) ?? null,
+    lunchProof:
+      lunchProofs.find((proof) => proof.attendance_id === day?.id) ?? null,
   };
 }
 
@@ -74,17 +80,20 @@ export default async function PartnerPage() {
           <h2 className="text-sm font-medium text-muted-foreground">
             Aaj ki activity
           </h2>
-          {activity.map(({ view, permissions, today: day, events, leaveToday }) => (
-            <PartnerActivity
-              key={view.pair.id}
-              partner={view.partner}
-              timezone={profile.timezone}
-              permissions={permissions}
-              today={day}
-              events={events}
-              leaveToday={leaveToday}
-            />
-          ))}
+          {activity.map(
+            ({ view, permissions, today: day, events, leaveToday, lunchProof }) => (
+              <PartnerActivity
+                key={view.pair.id}
+                partner={view.partner}
+                timezone={profile.timezone}
+                permissions={permissions}
+                today={day}
+                events={events}
+                leaveToday={leaveToday}
+                lunchProof={lunchProof}
+              />
+            ),
+          )}
         </section>
       )}
 

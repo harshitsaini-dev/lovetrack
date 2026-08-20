@@ -23,6 +23,9 @@ const ERRORS: Record<string, string> = {
   check_out_needs_check_in: "Check-out se pehle check-in karna zaroori hai.",
   lunch_needs_check_in: "Lunch se pehle check-in karna zaroori hai.",
   lunch_not_started: "Pehle lunch start karein.",
+  lunch_proof_missing:
+    "Pehle lunch verification video banayein — uske baad lunch end kar payenge.",
+  lunch_proof_exists: "Is din ki lunch video pehle hi record ho chuki hai.",
   finish_lunch_first: "Check-out se pehle lunch complete karein.",
 
   location_missing: "Location nahi mili. Permission dekar dobara try karein.",

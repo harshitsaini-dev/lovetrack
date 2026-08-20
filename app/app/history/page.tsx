@@ -1,41 +1,34 @@
 import type { Metadata } from "next";
 import { CalendarDays } from "lucide-react";
 
+import { DayDetail } from "@/components/attendance/day-detail";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireProfile } from "@/lib/auth/session";
 import {
   getAttendanceHistory,
   getEventsForAttendance,
+  getLunchProofsForAttendance,
 } from "@/lib/attendance/queries";
-import { formatCalendarDate, formatTime } from "@/lib/format/datetime";
-import { cn } from "@/lib/utils";
-import type { AttendanceStatus } from "@/types/attendance";
 
 export const metadata: Metadata = { title: "History" };
-
-const STATUS_LABELS: Record<AttendanceStatus, string> = {
-  not_started: "Shuru nahi hua",
-  checked_in: "Checked in",
-  lunch_active: "Lunch chal raha hai",
-  lunch_verified: "Lunch complete",
-  checked_out: "Complete",
-};
 
 export default async function HistoryPage() {
   const profile = await requireProfile();
 
   const days = await getAttendanceHistory();
-  const events = await getEventsForAttendance(days.map((d) => d.id));
+  const ids = days.map((d) => d.id);
 
-  const time = (iso: string | null) =>
-    formatTime(iso, profile.timezone) ?? "—";
+  const [events, lunchProofs] = await Promise.all([
+    getEventsForAttendance(ids),
+    getLunchProofsForAttendance(ids),
+  ]);
 
   return (
     <div className="space-y-5">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">History</h1>
         <p className="text-sm text-muted-foreground">
-          Pichhle 30 din ka record.
+          Pichhle 30 din ka poora record — har event ki location aur photo.
         </p>
       </header>
 
@@ -53,61 +46,36 @@ export default async function HistoryPage() {
         </Card>
       ) : (
         <ul className="space-y-3">
-          {days.map((day) => {
-            const dayEvents = events.filter((e) => e.attendance_id === day.id);
-            const flagged = dayEvents.filter((e) => e.status !== "passed").length;
-
-            const date = formatCalendarDate(day.attendance_date);
-
-            return (
-              <li key={day.id}>
-                <Card>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <p className="font-medium">{date}</p>
-                      <p
-                        className={cn(
-                          "text-xs",
-                          day.status === "checked_out"
-                            ? "text-status-active"
-                            : "text-muted-foreground",
-                        )}
-                      >
-                        {STATUS_LABELS[day.status]}
-                      </p>
-                    </div>
-
-                    <dl className="grid grid-cols-3 gap-2 text-xs">
-                      <div>
-                        <dt className="text-muted-foreground">In</dt>
-                        <dd className="tabular-nums font-medium">
-                          {time(day.check_in_at)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-muted-foreground">Lunch</dt>
-                        <dd className="tabular-nums font-medium">
-                          {time(day.lunch_verified_at ?? day.lunch_started_at)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-muted-foreground">Out</dt>
-                        <dd className="tabular-nums font-medium">
-                          {time(day.check_out_at)}
-                        </dd>
-                      </div>
-                    </dl>
-
-                    {flagged > 0 && (
-                      <p className="text-xs text-status-warn">
-                        {flagged} submission flagged
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              </li>
-            );
-          })}
+          {days.map((day) => (
+            <li key={day.id}>
+              <DayDetail
+                day={day}
+                // Your own media is always yours to look at, as often as
+                // you like, and nobody is notified when you do.
+                events={events
+                  .filter((e) => e.attendance_id === day.id)
+                  .map((e) => ({
+                    id: e.id,
+                    event_type: e.event_type,
+                    server_timestamp: e.server_timestamp,
+                    place_label: e.place_label,
+                    latitude: e.latitude,
+                    longitude: e.longitude,
+                    accuracy_m: e.accuracy_m,
+                    has_photo: e.photo_path !== null,
+                    photo_viewable: e.photo_path !== null,
+                    status: e.status,
+                    risk_score: e.risk_score,
+                    device_label: e.device_label,
+                  }))}
+                lunchProof={
+                  lunchProofs.find((p) => p.attendance_id === day.id) ?? null
+                }
+                timezone={profile.timezone}
+                ownerName="Aapki"
+              />
+            </li>
+          ))}
         </ul>
       )}
     </div>

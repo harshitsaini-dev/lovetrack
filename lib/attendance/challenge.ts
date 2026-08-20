@@ -40,12 +40,14 @@ export function getChallenge(
 ): Challenge {
   const name = firstName(partnerName);
 
-  if (eventType === "lunch_end") {
+  // Lunch in and lunch out do not take a photo — the clip recorded between
+  // them covers that stretch — so there is no camera to speak into and the
+  // instruction is about the location reading instead.
+  if (eventType === "lunch_start" || eventType === "lunch_end") {
+    const label = eventType === "lunch_start" ? "Lunch start" : "Lunch end";
     return {
-      overlay: name ? `Khana khalo, ${name}` : "Khana khalo",
-      instruction: name
-        ? `Camera me khana dikhayein aur bolein: "Khana khalo, ${name}"`
-        : `Camera me khana dikhayein aur bolein: "Khana khalo"`,
+      overlay: label,
+      instruction: `${label} ke liye sirf abhi ki location chahiye — photo nahi.`,
     };
   }
 

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import type {
   Attendance,
   AttendanceEvent,
+  LunchProof,
   SystemSettings,
 } from "@/types/attendance";
 
@@ -76,6 +77,26 @@ export async function getEventsForAttendance(
     .select("*")
     .in("attendance_id", attendanceIds)
     .order("server_timestamp", { ascending: true });
+
+  return data ?? [];
+}
+
+/**
+ * Lunch clips for a set of days, so history can offer the video inline.
+ *
+ * Own rows only — RLS on lunch_proofs allows the owner, a partner who is
+ * shared with, and an admin, and this call is always about yourself.
+ */
+export async function getLunchProofsForAttendance(
+  attendanceIds: string[],
+): Promise<LunchProof[]> {
+  if (!attendanceIds.length) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("lunch_proofs")
+    .select("*")
+    .in("attendance_id", attendanceIds);
 
   return data ?? [];
 }

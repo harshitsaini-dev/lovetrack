@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -45,6 +45,15 @@ type CaptureFlowProps = {
   userId: string;
   eventType: AttendanceEventType;
   challenge: Challenge;
+  /**
+   * Whether this step needs a live photo.
+   *
+   * Check-in and check-out do: the photo is what makes the claim hard to
+   * fake. Lunch in and lunch out do not — the lunch clip recorded between
+   * them is the proof for that whole stretch, and asking for three separate
+   * face captures over one meal is friction with nothing behind it.
+   */
+  requirePhoto?: boolean;
 };
 
 function deviceLabel(): string {
@@ -77,20 +86,23 @@ export function CaptureFlow({
   userId,
   eventType,
   challenge,
+  requirePhoto = true,
 }: CaptureFlowProps) {
   const router = useRouter();
 
-  const [stage, setStage] = useState<Stage>("capture");
+  const [stage, setStage] = useState<Stage>(
+    requirePhoto ? "capture" : "confirm",
+  );
   const [photo, setPhoto] = useState<{ blob: Blob; url: string } | null>(null);
   const [location, setLocation] = useState<CapturedLocation | null>(null);
   const [place, setPlace] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<RecordEventResult | null>(null);
 
-  const resolveLocation = useCallback(() => {
-    setError(null);
-    setPlace(null);
-
+  // Split in two so the mount-time request below does not call setState
+  // synchronously inside an effect. requestFix only reacts to the result;
+  // clearing the previous attempt is the retry button's job.
+  const requestFix = useCallback(() => {
     captureLocation()
       .then((fix) => {
         setLocation(fix);
@@ -100,6 +112,12 @@ export function CaptureFlow({
       })
       .catch((err) => setError(getLocationErrorMessage(err)));
   }, []);
+
+  const resolveLocation = useCallback(() => {
+    setError(null);
+    setPlace(null);
+    requestFix();
+  }, [requestFix]);
 
   const handleCaptured = useCallback(
     (blob: Blob, url: string) => {
@@ -121,11 +139,20 @@ export function CaptureFlow({
     setPlace(null);
     setError(null);
     setResult(null);
-    setStage("capture");
-  }, [photo]);
+    setStage(requirePhoto ? "capture" : "confirm");
+    if (!requirePhoto) resolveLocation();
+  }, [photo, requirePhoto, resolveLocation]);
+
+  // With no photo step there is nothing to trigger the location request,
+  // so it starts as soon as the screen does. Asking early also surfaces a
+  // denied permission while the user can still do something about it.
+  useEffect(() => {
+    if (!requirePhoto) requestFix();
+  }, [requirePhoto, requestFix]);
 
   const handleSubmit = useCallback(async () => {
-    if (!photo || !location) return;
+    if (!location) return;
+    if (requirePhoto && !photo) return;
 
     setStage("submitting");
     setError(null);
@@ -140,7 +167,9 @@ export function CaptureFlow({
       return;
     }
 
-    const photoPath = await uploadAttendancePhoto(userId, eventType, photo.blob);
+    const photoPath = photo
+      ? await uploadAttendancePhoto(userId, eventType, photo.blob)
+      : null;
 
     const outcome = await submitAttendanceEvent({
       nonce: nonce.nonce,
@@ -162,7 +191,7 @@ export function CaptureFlow({
     // the dashboard — yanking the result screen away before the user has
     // read it, risk signals and all. The action already revalidated the
     // cache, so the dashboard is fresh when they choose to go there.
-  }, [photo, location, eventType, userId]);
+  }, [photo, location, eventType, userId, requirePhoto]);
 
   // ---------- done ----------
   if (stage === "done" && result) {
@@ -239,7 +268,7 @@ export function CaptureFlow({
   }
 
   // ---------- capture ----------
-  if (stage === "capture") {
+  if (stage === "capture" && requirePhoto) {
     return (
       <div className="space-y-4">
         <Alert>
@@ -264,6 +293,13 @@ export function CaptureFlow({
 
   return (
     <div className="space-y-4">
+      {!requirePhoto && (
+        <Alert>
+          <ShieldCheck className="size-4" aria-hidden />
+          <AlertDescription>{challenge.instruction}</AlertDescription>
+        </Alert>
+      )}
+
       {photo && (
         <div className="overflow-hidden rounded-xl bg-muted">
           <Image
@@ -343,7 +379,7 @@ export function CaptureFlow({
           disabled={submitting}
           onClick={reset}
         >
-          Photo badlein
+          {requirePhoto ? "Photo badlein" : "Dobara"}
         </Button>
 
         <Button

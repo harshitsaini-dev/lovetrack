@@ -28,6 +28,7 @@ const permissionKeys = [
   "share_location",
   "share_lunch_proof",
   "share_leave",
+  "share_photos",
 ] as const;
 
 const permissionSchema = z.enum(permissionKeys);
@@ -252,6 +253,7 @@ export async function stopAllSharing(
       share_location: false,
       share_lunch_proof: false,
       share_leave: false,
+      share_photos: false,
     })
     .eq("pair_id", pairId.data)
     .eq("owner_id", user.id);

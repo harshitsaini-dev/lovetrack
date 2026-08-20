@@ -8,15 +8,19 @@ import {
   Moon,
 } from "lucide-react";
 
+import { DayDetail } from "@/components/attendance/day-detail";
 import { LocationMap } from "@/components/location/location-map";
+import { MapLink } from "@/components/location/map-link";
+import { MediaViewer } from "@/components/media/media-viewer";
 import { PartnerIdentity } from "@/components/partner/partner-identity";
 import { Card, CardContent } from "@/components/ui/card";
 import { EVENT_LABELS } from "@/lib/attendance/messages";
-import { formatCalendarDate, formatTime } from "@/lib/format/datetime";
+import { formatTime } from "@/lib/format/datetime";
 import type { LeaveEntry } from "@/lib/leave/queries";
 import type {
   PartnerDay,
   PartnerEvent,
+  PartnerLunchProof,
   PartnerPermissions,
 } from "@/lib/partner/queries";
 import { cn } from "@/lib/utils";
@@ -54,6 +58,7 @@ export function PartnerActivity({
   today,
   events,
   leaveToday,
+  lunchProof,
 }: {
   partner: PartnerLike;
   timezone: string;
@@ -61,6 +66,7 @@ export function PartnerActivity({
   today: PartnerDay | null;
   events: PartnerEvent[];
   leaveToday: LeaveEntry | null;
+  lunchProof?: PartnerLunchProof | null;
 }) {
   if (!permissions.attendance) {
     return (
@@ -81,6 +87,8 @@ export function PartnerActivity({
       </Card>
     );
   }
+
+  const firstName = partner.full_name?.split(" ")[0] ?? "Partner";
 
   const located = events.filter(
     (e): e is PartnerEvent & { latitude: number; longitude: number } =>
@@ -115,12 +123,13 @@ export function PartnerActivity({
         )}
 
         {today && (
-          <dl className="grid grid-cols-3 gap-2 text-xs">
+          <dl className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
             {(
               [
-                ["In", today.check_in_at],
-                ["Lunch", today.lunch_verified_at ?? today.lunch_started_at],
-                ["Out", today.check_out_at],
+                ["Check-in", today.check_in_at],
+                ["Lunch in", today.lunch_started_at],
+                ["Lunch out", today.lunch_verified_at],
+                ["Check-out", today.check_out_at],
               ] as const
             ).map(([label, at]) => (
               <div key={label}>
@@ -165,15 +174,32 @@ export function PartnerActivity({
               <li key={event.id} className="flex items-start gap-2.5 text-sm">
                 <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
 
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 space-y-1">
                   <p className="font-medium">
                     {EVENT_LABELS[event.event_type]}
                   </p>
-                  {event.place_label && (
-                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="size-3 shrink-0" aria-hidden />
-                      <span className="truncate">{event.place_label}</span>
-                    </p>
+
+                  {event.latitude !== null && event.longitude !== null ? (
+                    <MapLink
+                      latitude={event.latitude}
+                      longitude={event.longitude}
+                      label={event.place_label}
+                    />
+                  ) : (
+                    event.place_label && (
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="size-3 shrink-0" aria-hidden />
+                        <span className="truncate">{event.place_label}</span>
+                      </p>
+                    )
+                  )}
+
+                  {event.has_photo && event.photo_shared && (
+                    <MediaViewer
+                      kind="photo"
+                      id={event.id}
+                      alt={`${firstName} ki ${EVENT_LABELS[event.event_type]} photo`}
+                    />
                   )}
                 </div>
 
@@ -189,6 +215,17 @@ export function PartnerActivity({
               Aaj abhi tak koi activity nahi.
             </p>
           )
+        )}
+
+        {lunchProof && permissions.lunch_proof && (
+          <div className="space-y-1.5 rounded-lg border p-3">
+            <p className="text-sm font-medium">Lunch proof video</p>
+            <MediaViewer
+              kind="video"
+              id={lunchProof.id}
+              alt={`${firstName} ki lunch proof video`}
+            />
+          </div>
         )}
 
         <Link
@@ -207,12 +244,16 @@ export function PartnerActivity({
 export function PartnerHistory({
   days,
   events,
+  lunchProofs,
   timezone,
+  partnerName,
   locationShared,
 }: {
   days: PartnerDay[];
   events: PartnerEvent[];
+  lunchProofs: PartnerLunchProof[];
   timezone: string;
+  partnerName: string;
   locationShared: boolean;
 }) {
   if (days.length === 0) {
@@ -236,66 +277,30 @@ export function PartnerHistory({
         </p>
       )}
 
-      {days.map((day) => {
-        const dayEvents = events.filter((e) => e.attendance_id === day.id);
-
-        return (
-          <Card key={day.id}>
-            <CardContent className="space-y-2">
-              <div className="flex items-baseline justify-between gap-3">
-                <p className="font-medium">
-                  {formatCalendarDate(day.attendance_date)}
-                </p>
-                <p className={cn("text-xs", STATUS_TONE[day.status])}>
-                  {STATUS_TEXT[day.status]}
-                </p>
-              </div>
-
-              <dl className="grid grid-cols-3 gap-2 text-xs">
-                <div>
-                  <dt className="text-muted-foreground">In</dt>
-                  <dd className="font-medium tabular-nums">
-                    {formatTime(day.check_in_at, timezone) ?? "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Lunch</dt>
-                  <dd className="font-medium tabular-nums">
-                    {formatTime(
-                      day.lunch_verified_at ?? day.lunch_started_at,
-                      timezone,
-                    ) ?? "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Out</dt>
-                  <dd className="font-medium tabular-nums">
-                    {formatTime(day.check_out_at, timezone) ?? "—"}
-                  </dd>
-                </div>
-              </dl>
-
-              {dayEvents.some((e) => e.place_label) && (
-                <ul className="space-y-1 pt-1">
-                  {dayEvents
-                    .filter((e) => e.place_label)
-                    .map((e) => (
-                      <li
-                        key={e.id}
-                        className="flex items-center gap-1 text-xs text-muted-foreground"
-                      >
-                        <MapPin className="size-3 shrink-0" aria-hidden />
-                        <span className="truncate">
-                          {EVENT_LABELS[e.event_type]} · {e.place_label}
-                        </span>
-                      </li>
-                    ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+      {days.map((day) => (
+        <DayDetail
+          key={day.id}
+          day={day}
+          events={events
+            .filter((e) => e.attendance_id === day.id)
+            .map((e) => ({
+              id: e.id,
+              event_type: e.event_type,
+              server_timestamp: e.server_timestamp,
+              place_label: e.place_label,
+              latitude: e.latitude,
+              longitude: e.longitude,
+              accuracy_m: e.accuracy_m,
+              has_photo: e.has_photo,
+              photo_viewable: e.photo_shared,
+            }))}
+          lunchProof={
+            lunchProofs.find((p) => p.attendance_id === day.id) ?? null
+          }
+          timezone={timezone}
+          ownerName={partnerName}
+        />
+      ))}
     </div>
   );
 }

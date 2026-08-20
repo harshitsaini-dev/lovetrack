@@ -98,19 +98,33 @@ export function LunchFlow({
             aria-hidden
           />
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold">Lunch proof save ho gaya</h2>
+            <h2 className="text-lg font-semibold">Lunch verify ho gaya</h2>
             <p className="text-sm text-muted-foreground">
-              Video private hai. Partner ise tabhi dekh sakte hain jab aap
-              Settings me lunch proof sharing on karein.
+              Ab lunch end kar sakte hain. Video private hai — partner ise
+              tabhi dekh sakte hain jab aap lunch proof sharing on rakhein.
             </p>
           </div>
 
+          {/*
+            Straight on to the next step rather than back to the dashboard:
+            the meal is not recorded until lunch end, and leaving here means
+            the day sits half-finished until they notice.
+          */}
           <Button
             type="button"
             className="touch-target w-full"
+            onClick={() => router.push("/app/lunch")}
+          >
+            Lunch end karein
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            className="touch-target w-full"
             onClick={() => router.push("/app/dashboard")}
           >
-            Dashboard
+            Baad me
           </Button>
         </CardContent>
       </Card>

@@ -5,12 +5,12 @@ import {
   Check,
   Clock,
   LogOut,
-  MapPin,
   Utensils,
   Video,
 } from "lucide-react";
 
 import { LocationMap } from "@/components/location/location-map";
+import { MapLink } from "@/components/location/map-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatTime } from "@/lib/format/datetime";
@@ -215,12 +215,11 @@ export function TodayTimeline({
                       The coordinates stay visible underneath because they
                       are the record, and the accuracy is part of the claim.
                     */}
-                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="size-3 shrink-0" aria-hidden />
-                      <span className="truncate">
-                        {event.place_label ?? "Jagah ka naam nahi mila"}
-                      </span>
-                    </p>
+                    <MapLink
+                      latitude={event.latitude}
+                      longitude={event.longitude!}
+                      label={event.place_label ?? "Jagah ka naam nahi mila"}
+                    />
                     <p className="pl-4 text-xs tabular-nums text-muted-foreground/80">
                       {event.latitude.toFixed(5)},{" "}
                       {event.longitude?.toFixed(5)}

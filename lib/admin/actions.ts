@@ -14,6 +14,8 @@ const ERRORS: Record<string, string> = {
   cannot_suspend_self: "Aap khud ko suspend nahi kar sakte.",
   cannot_suspend_admin:
     "Doosre admin ko suspend nahi kar sakte. Pehle unka admin role hatayein.",
+  not_admin: "Aapke paas iski permission nahi hai.",
+  reason_required: "Wajah likhna zaroori hai.",
 };
 
 export async function setUserStatus(
@@ -209,4 +211,90 @@ export async function updateRiskSettings(
 
   revalidatePath("/admin/settings");
   return { ok: true, message: "Settings save ho gayin. Change audit log me hai." };
+}
+
+const deleteSchema = z.object({
+  id: z.string().uuid(),
+  reason: z
+    .string()
+    .trim()
+    .min(3, "Wajah likhna zaroori hai")
+    .max(300, "Wajah bahut lambi hai"),
+});
+
+/**
+ * Removes a wrong entry.
+ *
+ * Deletion is a real capability, so it is deliberately awkward: it needs a
+ * typed reason, and the reason goes into the audit log with the deleted
+ * row's contents before anything is removed. Without that, a mistake and a
+ * cover-up look identical afterwards.
+ *
+ * The stored photo or clip is left in place. Storage is outside the
+ * transaction, so removing it here could leave a row deleted and a file
+ * orphaned with nothing pointing at it; /admin/storage already sweeps
+ * unreferenced media, which is where that belongs.
+ */
+export async function deleteAttendanceEvent(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  await requireAdmin();
+
+  const parsed = deleteSchema.safeParse({
+    id: formData.get("eventId"),
+    reason: formData.get("reason"),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_delete_attendance_event", {
+    p_event_id: parsed.data.id,
+    p_reason: parsed.data.reason,
+  });
+
+  const result = data as { ok: boolean; error?: string } | null;
+
+  if (error || !result?.ok) {
+    return { ok: false, error: ERRORS[result?.error ?? ""] ?? "Delete nahi ho paya." };
+  }
+
+  revalidatePath("/admin/users", "layout");
+  revalidatePath("/admin/review");
+  return { ok: true, message: "Entry delete ho gayi. Audit log me record hai." };
+}
+
+/** Removes an entire day, and every capture on it. */
+export async function deleteAttendanceDay(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  await requireAdmin();
+
+  const parsed = deleteSchema.safeParse({
+    id: formData.get("attendanceId"),
+    reason: formData.get("reason"),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_delete_attendance_day", {
+    p_attendance_id: parsed.data.id,
+    p_reason: parsed.data.reason,
+  });
+
+  const result = data as { ok: boolean; error?: string } | null;
+
+  if (error || !result?.ok) {
+    return { ok: false, error: ERRORS[result?.error ?? ""] ?? "Delete nahi ho paya." };
+  }
+
+  revalidatePath("/admin/users", "layout");
+  return { ok: true, message: "Poora din delete ho gaya. Audit log me record hai." };
 }

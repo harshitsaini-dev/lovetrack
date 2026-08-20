@@ -10,6 +10,7 @@ import { getPairsForCurrentUser } from "@/lib/pairing/queries";
 import {
   getPartnerDays,
   getPartnerEvents,
+  getPartnerLunchProofs,
   getPartnerPermissions,
 } from "@/lib/partner/queries";
 
@@ -31,10 +32,11 @@ export default async function PartnerHistoryPage({
 
   if (!view) notFound();
 
-  const [permissions, days, events] = await Promise.all([
+  const [permissions, days, events, lunchProofs] = await Promise.all([
     getPartnerPermissions(partnerId),
     getPartnerDays(partnerId, 30),
     getPartnerEvents(partnerId),
+    getPartnerLunchProofs(partnerId),
   ]);
 
   return (
@@ -48,7 +50,9 @@ export default async function PartnerHistoryPage({
         <PartnerHistory
           days={days}
           events={events}
+          lunchProofs={permissions.lunch_proof ? lunchProofs : []}
           timezone={profile.timezone}
+          partnerName={view.partner.full_name ?? "Partner"}
           locationShared={permissions.location}
         />
       ) : (

@@ -16,6 +16,7 @@ export type PartnerPermissions = {
   location: boolean;
   lunch_proof: boolean;
   leave: boolean;
+  photos: boolean;
 };
 
 export type PartnerDay = {
@@ -39,6 +40,22 @@ export type PartnerEvent = {
   accuracy_m: number | null;
   /** False when the partner has attendance shared but not location. */
   location_shared: boolean;
+  /** Null unless photos are shared, even when one exists. */
+  photo_path: string | null;
+  /**
+   * Whether a photo was taken at all. Reported even when it is withheld:
+   * "there is one you cannot see" is honest, and hiding the difference
+   * would make the feed look like no photo was ever captured.
+   */
+  has_photo: boolean;
+  photo_shared: boolean;
+};
+
+export type PartnerLunchProof = {
+  id: string;
+  attendance_id: string;
+  created_at: string;
+  duration_s: number | null;
 };
 
 export async function getPartnerPermissions(
@@ -55,6 +72,7 @@ export async function getPartnerPermissions(
       location: false,
       lunch_proof: false,
       leave: false,
+      photos: false,
     }
   );
 }
@@ -83,6 +101,25 @@ export async function getPartnerEvents(
   });
 
   return (data as PartnerEvent[] | null) ?? [];
+}
+
+/**
+ * Lunch clips the partner shares.
+ *
+ * Only ids and timings — the video itself needs a signed URL, minted on
+ * demand when someone actually presses play.
+ */
+export async function getPartnerLunchProofs(
+  partnerId: string,
+  fromDate?: string,
+): Promise<PartnerLunchProof[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("get_partner_lunch_proofs", {
+    p_partner_id: partnerId,
+    p_from_date: fromDate ?? null,
+  });
+
+  return (data as PartnerLunchProof[] | null) ?? [];
 }
 
 /** Leave the partner has chosen to share. RLS handles the gating. */

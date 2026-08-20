@@ -86,6 +86,8 @@ export type PairPermissions = {
   share_location: boolean;
   share_lunch_proof: boolean;
   share_leave: boolean;
+  /** Check-in / check-out photographs. */
+  share_photos: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -97,6 +99,7 @@ export type PairPermissionsUpdate = Partial<
     | "share_location"
     | "share_lunch_proof"
     | "share_leave"
+    | "share_photos"
   >
 >;
 
@@ -317,6 +320,42 @@ export type Database = {
       };
       get_partner_events: {
         Args: { p_partner_id: string; p_from_date?: string | null };
+        Returns: unknown[];
+      };
+      get_partner_lunch_proofs: {
+        Args: { p_partner_id: string; p_from_date?: string | null };
+        Returns: unknown[];
+      };
+      get_attendance_photo_access: {
+        Args: { p_event_id: string };
+        Returns: unknown;
+      };
+      get_lunch_proof_access: {
+        Args: { p_proof_id: string };
+        Returns: unknown;
+      };
+      admin_user_days: {
+        Args: { p_user_id: string; p_limit?: number };
+        Returns: unknown[];
+      };
+      admin_user_events: {
+        Args: { p_user_id: string; p_limit?: number };
+        Returns: unknown[];
+      };
+      admin_delete_attendance_event: {
+        Args: { p_event_id: string; p_reason: string };
+        Returns: unknown;
+      };
+      admin_delete_attendance_day: {
+        Args: { p_attendance_id: string; p_reason: string };
+        Returns: unknown;
+      };
+      lunch_proof_exists: {
+        Args: { p_attendance_id: string };
+        Returns: boolean;
+      };
+      admin_user_lunch_proofs: {
+        Args: { p_user_id: string; p_limit?: number };
         Returns: unknown[];
       };
       users_due_for_reminder: {

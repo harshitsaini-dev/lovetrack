@@ -99,6 +99,104 @@ export async function listUsers(
   return (data as AdminUser[] | null) ?? [];
 }
 
+export type AdminUserEvent = {
+  id: string;
+  attendance_id: string;
+  event_type: AttendanceEventType;
+  server_timestamp: string;
+  status: VerificationStatus;
+  risk_score: number | null;
+  place_label: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  accuracy_m: number | null;
+  device_label: string | null;
+  photo_path: string | null;
+};
+
+export type AdminUserDay = {
+  id: string;
+  attendance_date: string;
+  status: AttendanceStatus;
+  check_in_at: string | null;
+  lunch_started_at: string | null;
+  lunch_verified_at: string | null;
+  check_out_at: string | null;
+};
+
+export type AdminUserLunchProof = {
+  id: string;
+  attendance_id: string;
+  created_at: string;
+  duration_s: number | null;
+};
+
+/**
+ * One user, for the record page.
+ *
+ * Reuses the searchable list rather than adding a second query, and then
+ * matches on id — admin_list_users already applies is_admin() and returns
+ * exactly the fields this page shows.
+ */
+export async function getAdminUser(userId: string): Promise<AdminUser | null> {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("admin_list_users", {
+    p_search: null,
+    p_limit: 500,
+  });
+
+  return (
+    ((data as AdminUser[] | null) ?? []).find((u) => u.id === userId) ?? null
+  );
+}
+
+export async function getAdminUserDays(
+  userId: string,
+  limit = 60,
+): Promise<AdminUserDay[]> {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("admin_user_days", {
+    p_user_id: userId,
+    p_limit: limit,
+  });
+
+  return (data as AdminUserDay[] | null) ?? [];
+}
+
+export async function getAdminUserEvents(
+  userId: string,
+  limit = 200,
+): Promise<AdminUserEvent[]> {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("admin_user_events", {
+    p_user_id: userId,
+    p_limit: limit,
+  });
+
+  return (data as AdminUserEvent[] | null) ?? [];
+}
+
+export async function getAdminUserLunchProofs(
+  userId: string,
+  limit = 60,
+): Promise<AdminUserLunchProof[]> {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("admin_user_lunch_proofs", {
+    p_user_id: userId,
+    p_limit: limit,
+  });
+
+  return (data as AdminUserLunchProof[] | null) ?? [];
+}
+
 export async function listFlaggedEvents(limit = 50): Promise<FlaggedEvent[]> {
   await requireAdmin();
 

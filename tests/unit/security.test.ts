@@ -102,8 +102,24 @@ describe("getChallenge", () => {
     }
   });
 
-  it("asks for food at lunch, not a greeting", () => {
-    expect(getChallenge("lunch_end", "Priya").overlay).toBe("Khana khalo, Priya");
+  /**
+   * Lunch in and lunch out take no photo — the clip recorded between them
+   * is the proof for that stretch — so there is no camera to speak into
+   * and the prompt must not ask for a phrase that cannot be said.
+   */
+  it.each(["lunch_start", "lunch_end"] as const)(
+    "asks %s for location only, not a spoken phrase",
+    (eventType) => {
+      const challenge = getChallenge(eventType, "Priya");
+
+      expect(challenge.instruction).toMatch(/photo nahi/i);
+      expect(challenge.instruction).not.toMatch(/bolein/i);
+      expect(challenge.overlay).not.toContain("Priya");
+    },
+  );
+
+  it("still asks for food on the lunch video", () => {
+    expect(getLunchVideoChallenge("Priya").overlay).toContain("Khana khalo, Priya");
   });
 
   it("tells the user to record while eating", () => {

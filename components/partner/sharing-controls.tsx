@@ -49,6 +49,11 @@ const CONTROLS = [
     hint: "Aapki lunch verification video.",
   },
   {
+    key: "share_photos",
+    label: "Photos",
+    hint: "Check-in aur check-out ki photos. Band karne par unhe sirf itna dikhega ki photo li gayi thi.",
+  },
+  {
     key: "share_leave",
     label: "Leave",
     hint: "Aapki leave requests aur unka status.",
