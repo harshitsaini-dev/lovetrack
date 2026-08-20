@@ -44,7 +44,12 @@ export type Profile = {
   notify_leave: boolean;
   notify_reminder: boolean;
   /** Local "HH:MM:SS" for the daily reminder, read in `timezone`. */
-  reminder_time: string;
+  /** Local time after which a missing check-in is chased. */
+  check_in_reminder_time: string;
+  /** Local time after which an unfinished day is chased. */
+  check_out_reminder_time: string;
+  /** Who last set those times. Null means the owner did. */
+  reminder_set_by: string | null;
   timezone: string;
   created_at: string;
   updated_at: string;
@@ -61,7 +66,9 @@ export type ProfileUpdate = Partial<
     | "notify_check_out"
     | "notify_leave"
     | "notify_reminder"
-    | "reminder_time"
+    | "check_in_reminder_time"
+    | "check_out_reminder_time"
+    | "reminder_set_by"
     | "timezone"
   >
 >;
@@ -268,6 +275,8 @@ export type Database = {
           full_name: string | null;
           email: string;
           avatar_url: string | null;
+          check_in_reminder_time: string;
+          check_out_reminder_time: string;
         }[];
       };
       issue_attendance_nonce: {
@@ -348,6 +357,14 @@ export type Database = {
       };
       admin_delete_attendance_day: {
         Args: { p_attendance_id: string; p_reason: string };
+        Returns: unknown;
+      };
+      set_reminder_times: {
+        Args: {
+          p_user_id: string;
+          p_check_in: string;
+          p_check_out: string;
+        };
         Returns: unknown;
       };
       lunch_proof_exists: {

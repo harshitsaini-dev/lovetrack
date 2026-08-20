@@ -15,9 +15,14 @@ import type { AttendanceStatus } from "@/types/attendance";
  * timezone, so there is no single moment when "the reminders go out"; the
  * database works out who is due on each pass.
  *
- * Idempotent by construction: `users_due_for_reminder()` excludes anyone
- * who already received today's mail, and a unique index on the email log
- * catches anything that slips through a concurrent run.
+ * There are two nudges, not one: a check-in reminder when the day never
+ * started, and a check-out reminder when it never closed. They are due at
+ * different times of day, and each user's times are set either by them or by
+ * a partner. The database works out which, if either, is outstanding.
+ *
+ * Idempotent by construction: `users_due_for_reminder()` excludes anyone who
+ * already received that kind of mail today, and a unique index on the email
+ * log catches anything that slips through a concurrent run.
  */
 
 export const dynamic = "force-dynamic";
@@ -43,22 +48,6 @@ function isAuthorized(request: NextRequest): boolean {
   return bearer.length > 0 && secretMatches(bearer, expected);
 }
 
-/** What is still outstanding, phrased for the email. */
-function pendingSteps(status: AttendanceStatus): string[] {
-  switch (status) {
-    case "not_started":
-      return ["Check-in", "Check-out"];
-    case "checked_in":
-      return ["Check-out"];
-    case "lunch_active":
-      return ["Lunch end", "Check-out"];
-    case "lunch_verified":
-      return ["Check-out"];
-    default:
-      return [];
-  }
-}
-
 type DueUser = {
   user_id: string;
   email: string;
@@ -66,6 +55,8 @@ type DueUser = {
   timezone: string;
   local_date: string;
   attendance_status: AttendanceStatus;
+  /** Which nudge is due: the day never started, or never closed. */
+  reminder_kind: "check_in" | "check_out";
 };
 
 export async function GET(request: NextRequest) {
@@ -91,22 +82,17 @@ export async function GET(request: NextRequest) {
   let failed = 0;
 
   for (const user of due) {
-    const pending = pendingSteps(user.attendance_status);
-
-    if (pending.length === 0) {
-      skipped++;
-      continue;
-    }
-
-    const content = reminderEmail(user.full_name, pending, appUrl);
+    const content = reminderEmail(user.full_name, user.reminder_kind, appUrl);
 
     const result = await sendEmail({
       to: user.email,
       userId: user.user_id,
       template: "daily_reminder",
-      // Their local date, so someone who crosses a timezone still gets
-      // exactly one reminder per day of their own.
-      dedupKey: user.local_date,
+      // Their local date AND the kind. The date alone would let the morning
+      // check-in reminder suppress the evening check-out one, which is
+      // exactly the bug splitting the times was meant to fix. The date is
+      // theirs, so crossing a timezone still yields one of each per day.
+      dedupKey: `${user.local_date}:${user.reminder_kind}`,
       ...content,
     });
 

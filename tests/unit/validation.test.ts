@@ -141,7 +141,10 @@ describe("profileSettingsSchema", () => {
   const valid = {
     fullName: "Harshit",
     timezone: "Asia/Kolkata" as const,
-    reminderTime: "20:30",
+    // Two times, not one: the check-in nudge has to be able to fire in the
+    // morning, long before the check-out one is due.
+    checkInReminderTime: "10:00",
+    checkOutReminderTime: "20:30",
     notifyCheckIn: true,
     notifyLunch: false,
     notifyCheckOut: true,
@@ -155,9 +158,15 @@ describe("profileSettingsSchema", () => {
 
   it.each(["25:00", "20:60", "8:30", "2030", ""])(
     "rejects %s as a time",
-    (reminderTime) => {
+    (time) => {
+      // Both fields, so neither can quietly stop being validated.
       expect(
-        profileSettingsSchema.safeParse({ ...valid, reminderTime }).success,
+        profileSettingsSchema.safeParse({ ...valid, checkInReminderTime: time })
+          .success,
+      ).toBe(false);
+      expect(
+        profileSettingsSchema.safeParse({ ...valid, checkOutReminderTime: time })
+          .success,
       ).toBe(false);
     },
   );
@@ -170,11 +179,30 @@ describe("profileSettingsSchema", () => {
   });
 
   it("accepts the boundaries of the day", () => {
-    for (const reminderTime of ["00:00", "23:59"]) {
+    for (const time of ["00:00", "23:59"]) {
       expect(
-        profileSettingsSchema.safeParse({ ...valid, reminderTime }).success,
+        profileSettingsSchema.safeParse({
+          ...valid,
+          checkInReminderTime: time,
+          checkOutReminderTime: time,
+        }).success,
       ).toBe(true);
     }
+  });
+
+  /**
+   * Deliberately allowed. A night shift starts in the evening and ends the
+   * next morning, so a check-out time earlier on the clock than check-in is
+   * a real schedule, not a mistake to reject.
+   */
+  it("allows a check-out time earlier in the day than check-in", () => {
+    expect(
+      profileSettingsSchema.safeParse({
+        ...valid,
+        checkInReminderTime: "22:00",
+        checkOutReminderTime: "06:00",
+      }).success,
+    ).toBe(true);
   });
 });
 

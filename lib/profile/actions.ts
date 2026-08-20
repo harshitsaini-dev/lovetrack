@@ -28,7 +28,8 @@ export async function updateProfileSettings(
   const parsed = profileSettingsSchema.safeParse({
     fullName: formData.get("fullName"),
     timezone: formData.get("timezone"),
-    reminderTime: formData.get("reminderTime"),
+    checkInReminderTime: formData.get("checkInReminderTime"),
+    checkOutReminderTime: formData.get("checkOutReminderTime"),
     notifyCheckIn: checkboxToBoolean(formData.get("notifyCheckIn")),
     notifyLunch: checkboxToBoolean(formData.get("notifyLunch")),
     notifyCheckOut: checkboxToBoolean(formData.get("notifyCheckOut")),
@@ -55,7 +56,11 @@ export async function updateProfileSettings(
     .update({
       full_name: parsed.data.fullName,
       timezone: parsed.data.timezone,
-      reminder_time: parsed.data.reminderTime,
+      check_in_reminder_time: parsed.data.checkInReminderTime,
+      check_out_reminder_time: parsed.data.checkOutReminderTime,
+      // Back to the owner: changing your own times clears the note
+      // saying a partner set them, because they no longer did.
+      reminder_set_by: null,
       notify_check_in: parsed.data.notifyCheckIn,
       notify_lunch: parsed.data.notifyLunch,
       notify_check_out: parsed.data.notifyCheckOut,

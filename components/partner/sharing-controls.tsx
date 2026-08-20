@@ -11,6 +11,7 @@ import { Eye, EyeOff, ShieldOff, Unlink } from "lucide-react";
 
 import { FormMessage } from "@/components/auth/form-message";
 import { PartnerIdentity } from "@/components/partner/partner-identity";
+import { ReminderTimes } from "@/components/partner/reminder-times";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -215,6 +216,20 @@ export function SharingControls({ view }: { view: PairView }) {
             {anyShared ? "Sab sharing band karein" : "Kuch share nahi ho raha"}
           </Button>
         </form>
+
+        <Separator />
+
+        {/*
+          Sits with the sharing controls because it is the other half of the
+          same relationship, but it writes to their account rather than
+          yours -- which the control says out loud.
+        */}
+        <ReminderTimes
+          partnerId={view.partner.id}
+          partnerName={view.partner.full_name ?? "Partner"}
+          checkIn={view.partner.check_in_reminder_time}
+          checkOut={view.partner.check_out_reminder_time}
+        />
 
         <Separator />
 

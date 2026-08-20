@@ -9,7 +9,16 @@ import type {
 export type PairView = {
   pair: Pair;
   /** The other member of the pair. */
-  partner: Pick<Profile, "id" | "full_name" | "email" | "avatar_url">;
+  partner: Pick<
+    Profile,
+    | "id"
+    | "full_name"
+    | "email"
+    | "avatar_url"
+    // Carried so a partner can set them without a second round trip.
+    | "check_in_reminder_time"
+    | "check_out_reminder_time"
+  >;
   /** True when the signed-in user sent the request. */
   isRequester: boolean;
   /** What the signed-in user shares with their partner. */
@@ -18,7 +27,7 @@ export type PairView = {
   theirs: PairPermissions | null;
 };
 
-type PartnerRow = Pick<Profile, "id" | "full_name" | "email" | "avatar_url">;
+type PartnerRow = PairView["partner"];
 
 /**
  * Every pair the signed-in user is part of, in one round trip.
@@ -86,6 +95,8 @@ export async function getPairsForCurrentUser(): Promise<{
         full_name: row.full_name,
         email: row.email,
         avatar_url: row.avatar_url,
+        check_in_reminder_time: row.check_in_reminder_time,
+        check_out_reminder_time: row.check_out_reminder_time,
       },
     ]),
   );

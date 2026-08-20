@@ -27,7 +27,14 @@ const NOTIFICATIONS = [
   { name: "notifyLeave", label: "Leave updates", field: "notify_leave" },
 ] as const;
 
-export function SettingsForm({ profile }: { profile: Profile }) {
+export function SettingsForm({
+  profile,
+  partnerSetReminders,
+}: {
+  profile: Profile;
+  /** Name of the partner who last set the reminder times, if any. */
+  partnerSetReminders?: string | null;
+}) {
   const [state, formAction] = useActionState<AuthFormState, FormData>(
     updateProfileSettings,
     null,
@@ -108,21 +115,55 @@ export function SettingsForm({ profile }: { profile: Profile }) {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="reminderTime">Reminder ka time</Label>
-            <Input
-              id="reminderTime"
-              name="reminderTime"
-              type="time"
-              defaultValue={toTimeInputValue(profile.reminder_time)}
-              required
-              className="h-11"
-              aria-describedby="reminder-hint"
-            />
-            <p id="reminder-hint" className="text-xs text-muted-foreground">
-              Ye aapke apne timezone ka local time hai.
-            </p>
+          {/*
+            Two times, not one. A single reminder could only chase the whole
+            day at once, so it had to sit after check-out -- by which point a
+            missed check-in has already cost the morning.
+          */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="checkInReminderTime">Check-in reminder</Label>
+              <Input
+                id="checkInReminderTime"
+                name="checkInReminderTime"
+                type="time"
+                defaultValue={toTimeInputValue(profile.check_in_reminder_time)}
+                required
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="checkOutReminderTime">Check-out reminder</Label>
+              <Input
+                id="checkOutReminderTime"
+                name="checkOutReminderTime"
+                type="time"
+                defaultValue={toTimeInputValue(profile.check_out_reminder_time)}
+                required
+                className="h-11"
+              />
+            </div>
           </div>
+
+          <p className="text-xs text-muted-foreground">
+            Dono aapke apne timezone ke local time hain. Check-in reminder tabhi
+            aata hai jab aapne abhi tak check-in nahi kiya, aur check-out
+            reminder tabhi jab din adhoora pada ho.
+          </p>
+
+          {/*
+            Said plainly rather than left as a mystery. A partner can set
+            these, and a schedule that changed with no explanation is the
+            kind of thing people assume is a bug in their phone.
+          */}
+          {partnerSetReminders && (
+            <p className="rounded-lg bg-accent/60 p-3 text-xs">
+              Ye times{" "}
+              <span className="font-medium">{partnerSetReminders}</span> ne set
+              kiye hain. Aap inhe kabhi bhi badal sakte hain.
+            </p>
+          )}
 
           <div className="space-y-2">
             <Label

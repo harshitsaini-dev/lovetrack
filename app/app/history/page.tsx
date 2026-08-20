@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CalendarDays } from "lucide-react";
 
 import { DayDetail } from "@/components/attendance/day-detail";
+import { DateFilter } from "@/components/history/date-filter";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireProfile } from "@/lib/auth/session";
 import {
@@ -9,13 +10,28 @@ import {
   getEventsForAttendance,
   getLunchProofsForAttendance,
 } from "@/lib/attendance/queries";
+import { formatCalendarDate } from "@/lib/format/datetime";
 
 export const metadata: Metadata = { title: "History" };
 
-export default async function HistoryPage() {
-  const profile = await requireProfile();
+/** Ignores anything that is not an ISO date, rather than passing it to SQL. */
+function asDate(value: string | undefined): string | undefined {
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
+}
 
-  const days = await getAttendanceHistory();
+export default async function HistoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string }>;
+}) {
+  const profile = await requireProfile();
+  const params = await searchParams;
+
+  const from = asDate(params.from);
+  const to = asDate(params.to);
+  const filtered = Boolean(from || to);
+
+  const days = await getAttendanceHistory({ from, to });
   const ids = days.map((d) => d.id);
 
   const [events, lunchProofs] = await Promise.all([
@@ -28,9 +44,17 @@ export default async function HistoryPage() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">History</h1>
         <p className="text-sm text-muted-foreground">
-          Pichhle 30 din ka poora record — har event ki location aur photo.
+          {filtered
+            ? // Says what is actually on screen. "Last 30 days" above a
+              // filtered list would simply be untrue.
+              `${from ? formatCalendarDate(from) : "Shuruaat"} se ${
+                to ? formatCalendarDate(to) : "aaj"
+              } tak`
+            : "Pichhle 30 din ka poora record — har event ki location aur photo."}
         </p>
       </header>
+
+      <DateFilter from={from} to={to} action="/app/history" />
 
       {days.length === 0 ? (
         <Card className="border-dashed bg-transparent shadow-none">
@@ -40,7 +64,9 @@ export default async function HistoryPage() {
               aria-hidden
             />
             <p className="mt-3 text-sm text-muted-foreground">
-              Abhi koi record nahi. Pehla check-in karke shuruaat karein.
+              {filtered
+                ? "In dates me koi record nahi mila."
+                : "Abhi koi record nahi. Pehla check-in karke shuruaat karein."}
             </p>
           </CardContent>
         </Card>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EyeOff } from "lucide-react";
 
+import { DateFilter } from "@/components/history/date-filter";
 import { PartnerHistory } from "@/components/partner/partner-activity";
 import { PartnerIdentity } from "@/components/partner/partner-identity";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,13 +17,24 @@ import {
 
 export const metadata: Metadata = { title: "Partner history" };
 
+/** Ignores anything that is not an ISO date, rather than passing it to SQL. */
+function asDate(value: string | undefined): string | undefined {
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
+}
+
 export default async function PartnerHistoryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ partnerId: string }>;
+  searchParams: Promise<{ from?: string; to?: string }>;
 }) {
   const { partnerId } = await params;
+  const { from: rawFrom, to: rawTo } = await searchParams;
   const profile = await requireProfile();
+
+  const from = asDate(rawFrom);
+  const to = asDate(rawTo);
 
   // Only someone you are actually paired with has a page here. Anything
   // else is a 404 rather than a 403 — confirming that an id belongs to a
@@ -32,12 +44,20 @@ export default async function PartnerHistoryPage({
 
   if (!view) notFound();
 
-  const [permissions, days, events, lunchProofs] = await Promise.all([
+  const [permissions, allDays, events, lunchProofs] = await Promise.all([
     getPartnerPermissions(partnerId),
-    getPartnerDays(partnerId, 30),
-    getPartnerEvents(partnerId),
-    getPartnerLunchProofs(partnerId),
+    getPartnerDays(partnerId, 90),
+    getPartnerEvents(partnerId, from),
+    getPartnerLunchProofs(partnerId, from),
   ]);
+
+  // The days function takes a count, not a range, so the range is applied
+  // here. attendance_date is a plain ISO date, which sorts and compares as a
+  // string without a timezone getting involved.
+  const days = allDays.filter(
+    (d) =>
+      (!from || d.attendance_date >= from) && (!to || d.attendance_date <= to),
+  );
 
   return (
     <div className="space-y-5">
@@ -45,6 +65,14 @@ export default async function PartnerHistoryPage({
         <h1 className="text-2xl font-semibold tracking-tight">History</h1>
         <PartnerIdentity partner={view.partner} />
       </header>
+
+      {permissions.attendance && (
+        <DateFilter
+          from={from}
+          to={to}
+          action={`/app/partner/${partnerId}`}
+        />
+      )}
 
       {permissions.attendance ? (
         <PartnerHistory

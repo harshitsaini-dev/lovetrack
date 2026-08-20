@@ -371,11 +371,13 @@ export function CaptureFlow({
         </Button>
       )}
 
-      <div className="flex gap-2">
+      {/* Same reason as the lunch flow: "Verify & Lunch start" does not fit
+          beside anything on a phone. */}
+      <div className="flex flex-col gap-2 sm:flex-row">
         <Button
           type="button"
           variant="outline"
-          className="touch-target flex-1"
+          className="touch-target w-full sm:flex-1"
           disabled={submitting}
           onClick={reset}
         >
@@ -384,7 +386,7 @@ export function CaptureFlow({
 
         <Button
           type="button"
-          className="touch-target flex-[2]"
+          className="touch-target w-full sm:flex-[2]"
           disabled={!location || submitting}
           onClick={handleSubmit}
         >

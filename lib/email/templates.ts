@@ -151,31 +151,46 @@ export function welcomeEmail(name: string | null, appUrl: string): EmailContent 
 }
 
 /**
- * Daily nudge when the day is unfinished.
+ * The daily nudge.
  *
- * Deliberately does not say where anyone was or attach a photo — just that
- * something is outstanding.
+ * Two kinds, because they are due at different moments and are about
+ * different things: one chases a day that never started, the other a day
+ * that never closed. A single "something is outstanding" mail had to wait
+ * until after check-out time to be accurate, by which point a missed
+ * check-in has already cost the morning.
+ *
+ * Deliberately says nothing about where anyone was and carries no photo --
+ * just that something is outstanding.
  */
 export function reminderEmail(
   name: string | null,
-  pending: string[],
+  kind: "check_in" | "check_out",
   appUrl: string,
 ): EmailContent {
   const who = name?.split(" ")[0] ?? "there";
-  const list = pending.map((item) => `<li>${item}</li>`).join("");
+
+  if (kind === "check_in") {
+    return {
+      subject: "Aaj ka check-in abhi baaki hai",
+      html: wrap({
+        heading: `${who}, aaj check-in nahi hua`,
+        body: `<p style="margin:0 0 12px;">Aapne aaj abhi tak check-in nahi kiya hai.</p>
+               <p style="margin:0;">Agar aaj chhutti hai, to app me leave mark kar dein — phir ye reminder nahi aayega.</p>`,
+        cta: { href: `${appUrl}/app/check-in`, label: "Ab check-in karein" },
+      }),
+      text: `${who}, aaj check-in nahi hua.\n\nCheck-in karein: ${appUrl}/app/check-in\n\nAgar aaj chhutti hai to leave mark kar dein.`,
+    };
+  }
 
   return {
-    subject: "Aaj ki activity abhi adhoori hai",
+    subject: "Aaj ka din abhi band nahi hua",
     html: wrap({
-      heading: `${who}, aaj ka din abhi complete nahi hua`,
-      body: `<p style="margin:0 0 12px;">Ye baaki hai:</p>
-             <ul style="margin:0 0 12px;padding-left:20px;">${list}</ul>
-             <p style="margin:0;">Agar aaj chhutti thi, to app me leave mark kar dein — phir ye reminder nahi aayega.</p>`,
-      cta: { href: `${appUrl}/app/dashboard`, label: "Ab complete karein" },
+      heading: `${who}, check-out baaki hai`,
+      body: `<p style="margin:0 0 12px;">Aapka aaj ka din abhi complete nahi hua — check-out reh gaya hai.</p>
+             <p style="margin:0;">Ek minute lagega.</p>`,
+      cta: { href: `${appUrl}/app/check-out`, label: "Ab check-out karein" },
     }),
-    text: `${who}, aaj ka din abhi complete nahi hua.\n\nBaaki hai:\n${pending
-      .map((item) => `- ${item}`)
-      .join("\n")}\n\nComplete karein: ${appUrl}/app/dashboard\n\nAgar aaj chhutti thi to leave mark kar dein.`,
+    text: `${who}, aaj ka check-out baaki hai.\n\nComplete karein: ${appUrl}/app/check-out`,
   };
 }
 

@@ -50,7 +50,10 @@ export function VideoRecorder({ challenge, onRecorded }: VideoRecorderProps) {
       }
 
       try {
-        const base = await openCamera("environment");
+        // Front camera. The clip is a person saying a phrase while
+        // eating, so the point is the face -- the rear camera framed
+        // the table and left the speaker out of shot entirely.
+        const base = await openCamera("user");
 
         // openCamera deliberately asks for video only; the clip needs audio
         // too, so the microphone track is added here.
@@ -138,11 +141,17 @@ export function VideoRecorder({ challenge, onRecorded }: VideoRecorderProps) {
   return (
     <div className="space-y-3">
       <div className="relative overflow-hidden rounded-xl bg-muted">
+        {/*
+          Mirrored, like every other selfie preview and like the photo
+          capture screen. Only the preview flips -- what MediaRecorder
+          writes is the unmirrored stream, so the recorded clip is not
+          back to front.
+        */}
         <video
           ref={videoRef}
           playsInline
           muted
-          className="aspect-[3/4] w-full object-cover"
+          className="aspect-[3/4] w-full -scale-x-100 object-cover"
         />
 
         <div className="absolute inset-x-0 top-0 p-3">

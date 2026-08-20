@@ -24,7 +24,8 @@ export const profileSettingsSchema = z.object({
     .min(2, "Naam kam se kam 2 characters ka ho")
     .max(80, "Naam bahut lamba hai"),
   timezone: z.enum(TIMEZONES),
-  reminderTime: timeOfDay,
+  checkInReminderTime: timeOfDay,
+  checkOutReminderTime: timeOfDay,
   notifyCheckIn: z.boolean(),
   notifyLunch: z.boolean(),
   notifyCheckOut: z.boolean(),

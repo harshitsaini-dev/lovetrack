@@ -82,17 +82,24 @@ const rpc = async (h, fn, args = {}) => {
 const stamp = Math.floor(Math.random() * 100000);
 const emailA = `leave.a.${stamp}@lovetrack.dev`;
 const emailB = `leave.b.${stamp}@lovetrack.dev`;
-let idA, idB;
+const emailC = `leave.c.${stamp}@lovetrack.dev`;
+let idA, idB, idC;
 
 // A date far enough back that no real data collides.
 const LEAVE_DAY = "2021-03-11";
 const WORKED_DAY = "2021-03-12";
 
 try {
-  console.log("\nSetting up two users...");
-  [idA, idB] = await Promise.all([mkUser(emailA), mkUser(emailB)]);
-  const [tA, tB] = await Promise.all([tokenFor(emailA), tokenFor(emailB)]);
-  const A = hdr(tA), B = hdr(tB);
+  // C is paired with nobody. Every "an outsider cannot do this" check needs
+  // a real outsider holding a real token, not an absent one.
+  console.log("\nSetting up three users...");
+  [idA, idB, idC] = await Promise.all([
+    mkUser(emailA), mkUser(emailB), mkUser(emailC),
+  ]);
+  const [tA, tB, tC] = await Promise.all([
+    tokenFor(emailA), tokenFor(emailB), tokenFor(emailC),
+  ]);
+  const A = hdr(tA), B = hdr(tB), C = hdr(tC);
 
   console.log("\n1. A reason is genuinely required");
   {
@@ -216,19 +223,48 @@ try {
 
   console.log("\n6. Reminder eligibility");
   {
-    // B has done nothing today and has reminders on, so should be due.
+    const today = new Date().toISOString().slice(0, 10);
+    const listedAs = (rows, u) =>
+      (rows ?? []).filter((row) => row.user_id === u).map((row) => row.reminder_kind);
+
+    // B has not started the day, so the CHECK-IN reminder is the one due --
+    // not the check-out one, which is the whole point of splitting them.
     await fetch(`${URL}/rest/v1/profiles?id=eq.${idB}`, {
       method: "PATCH", headers: admin,
-      body: JSON.stringify({ reminder_time: "00:01", notify_reminder: true }),
+      body: JSON.stringify({
+        check_in_reminder_time: "00:01",
+        check_out_reminder_time: "23:59",
+        notify_reminder: true,
+      }),
     });
 
     const due = await rpc(admin, "users_due_for_reminder");
-    const listed = (u) => due.body.some((row) => row.user_id === u);
+    check("a day that never started is due a check-in reminder",
+      listedAs(due.body, idB).includes("check_in"),
+      JSON.stringify(listedAs(due.body, idB)));
 
-    check("someone with an unfinished day is due", listed(idB), JSON.stringify(due.body?.length));
+    check("and not a check-out one, since there is nothing to close",
+      !listedAs(due.body, idB).includes("check_out"),
+      JSON.stringify(listedAs(due.body, idB)));
 
-    // Now put B on leave for today; they should drop off the list.
-    const today = new Date().toISOString().slice(0, 10);
+    // Before the check-in time, nothing is due at all -- the time is what
+    // makes it a reminder rather than a constant nag.
+    await fetch(`${URL}/rest/v1/profiles?id=eq.${idB}`, {
+      method: "PATCH", headers: admin,
+      body: JSON.stringify({ check_in_reminder_time: "23:58" }),
+    });
+
+    const notYet = await rpc(admin, "users_due_for_reminder");
+    check("nothing is due before the chosen time",
+      listedAs(notYet.body, idB).length === 0,
+      JSON.stringify(listedAs(notYet.body, idB)));
+
+    await fetch(`${URL}/rest/v1/profiles?id=eq.${idB}`, {
+      method: "PATCH", headers: admin,
+      body: JSON.stringify({ check_in_reminder_time: "00:01" }),
+    });
+
+    // Someone on leave drops off entirely.
     await fetch(`${URL}/rest/v1/leave_requests`, {
       method: "POST", headers: admin,
       body: JSON.stringify({
@@ -238,19 +274,77 @@ try {
 
     const afterLeave = await rpc(admin, "users_due_for_reminder");
     check("someone on leave today is not reminded",
-      !afterLeave.body.some((row) => row.user_id === idB),
-      JSON.stringify(afterLeave.body?.filter((r) => r.user_id === idB)));
+      listedAs(afterLeave.body, idB).length === 0,
+      JSON.stringify(listedAs(afterLeave.body, idB)));
 
     // And someone with reminders switched off is never included.
     await fetch(`${URL}/rest/v1/profiles?id=eq.${idA}`, {
       method: "PATCH", headers: admin,
-      body: JSON.stringify({ reminder_time: "00:01", notify_reminder: false }),
+      body: JSON.stringify({
+        check_in_reminder_time: "00:01",
+        check_out_reminder_time: "00:01",
+        notify_reminder: false,
+      }),
     });
 
     const afterOptOut = await rpc(admin, "users_due_for_reminder");
     check("someone who turned reminders off is not included",
-      !afterOptOut.body.some((row) => row.user_id === idA),
-      JSON.stringify(afterOptOut.body?.filter((r) => r.user_id === idA)));
+      listedAs(afterOptOut.body, idA).length === 0,
+      JSON.stringify(listedAs(afterOptOut.body, idA)));
+  }
+
+  console.log("\n6b. A partner sets the reminder times");
+  {
+    // The point of the feature: you know when your friend should have
+    // started, so you are the one who sets the nudge.
+    const set = await rpc(A, "set_reminder_times", {
+      p_user_id: idB, p_check_in: "09:15", p_check_out: "18:45",
+    });
+    check("a paired partner may set them", set.body?.ok === true,
+      JSON.stringify(set.body));
+
+    const row = JSON.parse(
+      (await get(admin, `profiles?select=check_in_reminder_time,check_out_reminder_time,reminder_set_by&id=eq.${idB}`)).body,
+    )[0];
+
+    check("the times actually changed",
+      row?.check_in_reminder_time?.startsWith("09:15") &&
+        row?.check_out_reminder_time?.startsWith("18:45"),
+      JSON.stringify(row));
+
+    // Recorded, so the settings screen can name who did it rather than
+    // leaving a person wondering why their phone buzzed at 09:15.
+    check("and it is recorded who set them", row?.reminder_set_by === idA,
+      JSON.stringify(row?.reminder_set_by));
+
+    // Setting your own clears that note, since a partner no longer did it.
+    const own = await rpc(B, "set_reminder_times", {
+      p_user_id: idB, p_check_in: "10:00", p_check_out: "20:00",
+    });
+    check("the owner may set their own", own.body?.ok === true,
+      JSON.stringify(own.body));
+
+    const afterOwn = JSON.parse(
+      (await get(admin, `profiles?select=reminder_set_by&id=eq.${idB}`)).body,
+    )[0];
+    check("and doing so clears the partner attribution",
+      afterOwn?.reminder_set_by === null, JSON.stringify(afterOwn));
+
+    // The one that matters: a stranger must not be able to reach into
+    // somebody's account and move their reminders around.
+    const stranger = await rpc(C, "set_reminder_times", {
+      p_user_id: idB, p_check_in: "03:00", p_check_out: "04:00",
+    });
+    check("an unpaired user may not set them",
+      stranger.body?.ok === false && stranger.body?.error === "not_paired",
+      JSON.stringify(stranger.body));
+
+    const unchanged = JSON.parse(
+      (await get(admin, `profiles?select=check_in_reminder_time&id=eq.${idB}`)).body,
+    )[0];
+    check("and nothing moved",
+      unchanged?.check_in_reminder_time?.startsWith("10:00"),
+      JSON.stringify(unchanged));
   }
 
   console.log("\n7. The email log cannot be forged");
@@ -270,7 +364,7 @@ try {
   failed++;
 } finally {
   console.log("\nCleaning up...");
-  await Promise.all([idA, idB].filter(Boolean).map(rmUser));
+  await Promise.all([idA, idB, idC].filter(Boolean).map(rmUser));
 }
 
 console.log(`\n${passed} passed, ${failed} failed\n`);

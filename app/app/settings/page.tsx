@@ -5,6 +5,7 @@ import { AvatarPicker } from "@/components/settings/avatar-picker";
 import { PasswordForm } from "@/components/settings/password-form";
 import { SettingsForm } from "@/components/settings/settings-form";
 import { requireProfile } from "@/lib/auth/session";
+import { getPairsForCurrentUser } from "@/lib/pairing/queries";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -12,6 +13,15 @@ export const metadata: Metadata = {
 
 export default async function SettingsPage() {
   const profile = await requireProfile();
+
+  // If a partner set the reminder times, the screen has to say who. A
+  // schedule that changed with no explanation reads as a bug in the phone,
+  // and the person has no way to find out otherwise.
+  const { accepted } = await getPairsForCurrentUser();
+  const setter = profile.reminder_set_by
+    ? (accepted.find((v) => v.partner.id === profile.reminder_set_by)?.partner
+        .full_name ?? "Aapke partner")
+    : null;
 
   return (
     <div className="space-y-5">
@@ -24,7 +34,7 @@ export default async function SettingsPage() {
 
       <AvatarPicker profile={profile} />
 
-      <SettingsForm profile={profile} />
+      <SettingsForm profile={profile} partnerSetReminders={setter} />
 
       <PasswordForm />
 

@@ -265,3 +265,57 @@ export async function stopAllSharing(
   revalidatePath("/app/partner");
   return { ok: true, message: "Sab sharing band kar di gayi." };
 }
+
+const reminderTimesSchema = z.object({
+  userId: z.string().uuid(),
+  checkIn: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Sahi time daalein"),
+  checkOut: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Sahi time daalein"),
+});
+
+/**
+ * Sets when a partner gets nudged.
+ *
+ * This is the one control here that reaches into somebody else's account
+ * rather than your own, which is the point of the feature: you are the one
+ * who knows when your friend should have started. It stays honest by being
+ * visible — their settings screen names whoever set the times, and they can
+ * change them back at any moment.
+ *
+ * The database decides who is allowed; this only shapes the input.
+ */
+export async function setPartnerReminderTimes(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const parsed = reminderTimesSchema.safeParse({
+    userId: formData.get("userId"),
+    checkIn: formData.get("checkIn"),
+    checkOut: formData.get("checkOut"),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("set_reminder_times", {
+    p_user_id: parsed.data.userId,
+    p_check_in: parsed.data.checkIn,
+    p_check_out: parsed.data.checkOut,
+  });
+
+  const result = data as { ok: boolean; error?: string } | null;
+
+  if (error || !result?.ok) {
+    return {
+      ok: false,
+      error:
+        result?.error === "not_paired"
+          ? "Aap in se paired nahi hain."
+          : "Reminder time save nahi ho paya.",
+    };
+  }
+
+  revalidatePath("/app/partner");
+  return { ok: true, message: "Reminder time set ho gaya." };
+}

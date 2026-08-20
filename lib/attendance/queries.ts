@@ -46,8 +46,16 @@ export async function getTodayAttendance(timezone: string): Promise<{
   return { attendance, events: events ?? [], today };
 }
 
-/** Recent days, newest first — the history screen. */
-export async function getAttendanceHistory(limit = 30): Promise<Attendance[]> {
+/**
+ * Recent days, newest first — the history screen.
+ *
+ * The range is inclusive on both ends, because that is what a person means
+ * by "1st to 5th". attendance_date is a plain date, so these compare as
+ * dates and no timezone gets involved.
+ */
+export async function getAttendanceHistory(
+  { from, to, limit = 30 }: { from?: string; to?: string; limit?: number } = {},
+): Promise<Attendance[]> {
   const supabase = await createClient();
 
   const {
@@ -56,12 +64,19 @@ export async function getAttendanceHistory(limit = 30): Promise<Attendance[]> {
 
   if (!user) return [];
 
-  const { data } = await supabase
+  let query = supabase
     .from("attendance")
     .select("*")
     .eq("user_id", user.id)
-    .order("attendance_date", { ascending: false })
-    .limit(limit);
+    .order("attendance_date", { ascending: false });
+
+  if (from) query = query.gte("attendance_date", from);
+  if (to) query = query.lte("attendance_date", to);
+
+  // A filtered view should show everything in the range rather than the
+  // most recent 30 of it, which would silently hide the older half of a
+  // range somebody deliberately asked for.
+  const { data } = await query.limit(from || to ? 400 : limit);
 
   return data ?? [];
 }
