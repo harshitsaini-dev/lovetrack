@@ -21,7 +21,7 @@ Last updated: 2026-08-20
 | 11 Â· Tests â€” unit + E2E + database verify | âœ… |
 | 12 Â· Deployment â€” Vercel + domain + cron | âœ… live |
 
-**Migrations applied: 0001-0020.**
+**Migrations applied: 0001-0022.**
 
 ### Green as of last run
 
@@ -29,7 +29,7 @@ Last updated: 2026-08-20
 |---|---|
 | `npm run check` (typecheck + lint + unit + build) | âœ… exit 0 |
 | Vitest unit tests | **72/72** |
-| `npm run verify:all` â€” database-level, adversarial | **185/185** |
+| `npm run verify:all` â€” database-level, adversarial | **208/208** |
 | Playwright E2E (mobile-first, headed) | **105/105** |
 
 ### Media, map links aur lunch order (20 Aug 2026)
@@ -98,11 +98,11 @@ Do cheezein is kaam me pakdi gayin:
 
 | Script | Checks |
 |---|---|
-| `verify-pairing-rls.mjs` | 24 |
+| `verify-pairing-rls.mjs` | 23 |
 | `verify-attendance.mjs` | 25 |
 | `verify-lunch.mjs` | 11 |
-| `verify-leave.mjs` | 20 |
-| `verify-partner-activity.mjs` | 22 |
+| `verify-leave.mjs` | 21 |
+| `verify-partner-activity.mjs` | 23 |
 | `verify-retention.mjs` | 20 |
 | `verify-admin.mjs` | 25 |
 | `verify-hardening.mjs` | 20 |
