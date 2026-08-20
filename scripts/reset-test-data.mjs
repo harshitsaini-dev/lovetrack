@@ -35,9 +35,12 @@ const headers = {
 // Order matters only for readability — the foreign keys cascade.
 const tables = [
   "risk_events",
+  "lunch_proofs",
   "attendance_events",
   "attendance_nonces",
   "attendance",
+  "leave_requests",
+  "email_logs",
   "pair_permissions",
   "pairs",
 ];

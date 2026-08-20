@@ -15,6 +15,7 @@ import type {
   LunchProof,
   SystemSettings,
 } from "@/types/attendance";
+import type { LeaveEntry } from "@/lib/leave/queries";
 
 export type UserRole = "user" | "admin";
 export type AccountStatus = "active" | "suspended";
@@ -143,6 +144,40 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      leave_requests: {
+        Row: LeaveEntry;
+        Insert: Pick<LeaveEntry, "user_id" | "leave_date" | "reason"> &
+          Partial<Pick<LeaveEntry, "leave_type">>;
+        // Withdrawing is the only change anyone may make.
+        Update: Pick<LeaveEntry, "status">;
+        Relationships: [];
+      };
+      email_logs: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          template: string;
+          to_email: string;
+          subject: string | null;
+          status: "sent" | "failed" | "skipped";
+          provider_id: string | null;
+          error: string | null;
+          dedup_key: string | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id?: string | null;
+          template: string;
+          to_email: string;
+          subject?: string | null;
+          status: "sent" | "failed" | "skipped";
+          provider_id?: string | null;
+          error?: string | null;
+          dedup_key?: string | null;
+        };
+        Update: never;
+        Relationships: [];
+      };
       lunch_proofs: {
         Row: LunchProof;
         Insert: never;
@@ -235,6 +270,17 @@ export type Database = {
       issue_attendance_nonce: {
         Args: { p_event_type: AttendanceEventType };
         Returns: string;
+      };
+      users_due_for_reminder: {
+        Args: Record<string, never>;
+        Returns: {
+          user_id: string;
+          email: string;
+          full_name: string | null;
+          timezone: string;
+          local_date: string;
+          attendance_status: string;
+        }[];
       };
       preview_retention_cleanup: {
         Args: Record<string, never>;

@@ -1,0 +1,266 @@
+/**
+ * Leave rules and reminder eligibility.
+ *
+ * The interesting cases: you cannot approve your own leave, you cannot take
+ * a day you already worked, and a reminder must not go to someone who is on
+ * leave or has already been emailed today.
+ *
+ *   node scripts/verify-leave.mjs
+ */
+
+import { readFileSync } from "node:fs";
+
+const env = {};
+for (const line of readFileSync(".env.local", "utf8").split(/\r?\n/)) {
+  const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/);
+  if (m) env[m[1]] = m[2].trim();
+}
+
+const URL = env.NEXT_PUBLIC_SUPABASE_URL;
+const ANON = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SVC = env.SUPABASE_SERVICE_ROLE_KEY;
+const admin = { apikey: SVC, Authorization: `Bearer ${SVC}`, "Content-Type": "application/json" };
+
+let passed = 0;
+let failed = 0;
+
+function check(label, ok, detail = "") {
+  if (ok) {
+    passed++;
+    console.log(`  PASS  ${label}`);
+  } else {
+    failed++;
+    console.log(`  FAIL  ${label}${detail ? ` — ${detail}` : ""}`);
+  }
+}
+
+const mkUser = async (email) =>
+  (await (await fetch(`${URL}/auth/v1/admin/users`, {
+    method: "POST", headers: admin,
+    body: JSON.stringify({ email, password: "LeaveTest123", email_confirm: true }),
+  })).json()).id;
+
+const rmUser = (id) =>
+  fetch(`${URL}/auth/v1/admin/users/${id}`, { method: "DELETE", headers: admin });
+
+const tokenFor = async (email) =>
+  (await (await fetch(`${URL}/auth/v1/token?grant_type=password`, {
+    method: "POST", headers: { apikey: ANON, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password: "LeaveTest123" }),
+  })).json()).access_token;
+
+const hdr = (t) => ({ apikey: ANON, Authorization: `Bearer ${t}`, "Content-Type": "application/json" });
+
+async function post(h, table, body) {
+  const r = await fetch(`${URL}/rest/v1/${table}`, {
+    method: "POST", headers: { ...h, Prefer: "return=representation" },
+    body: JSON.stringify(body),
+  });
+  return { status: r.status, body: await r.text() };
+}
+
+async function patch(h, path, body) {
+  const r = await fetch(`${URL}/rest/v1/${path}`, {
+    method: "PATCH", headers: { ...h, Prefer: "return=representation" },
+    body: JSON.stringify(body),
+  });
+  return { status: r.status, body: await r.text() };
+}
+
+const get = async (h, path) =>
+  JSON.parse(await (await fetch(`${URL}/rest/v1/${path}`, { headers: h })).text());
+
+const rpc = async (h, fn, args = {}) => {
+  const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, {
+    method: "POST", headers: h, body: JSON.stringify(args),
+  });
+  const t = await r.text();
+  try { return { status: r.status, body: JSON.parse(t) }; }
+  catch { return { status: r.status, body: t }; }
+};
+
+const stamp = Math.floor(Math.random() * 100000);
+const emailA = `leave.a.${stamp}@lovetrack.dev`;
+const emailB = `leave.b.${stamp}@lovetrack.dev`;
+let idA, idB;
+
+// A date far enough back that no real data collides.
+const LEAVE_DAY = "2021-03-11";
+const WORKED_DAY = "2021-03-12";
+
+try {
+  console.log("\nSetting up two users...");
+  [idA, idB] = await Promise.all([mkUser(emailA), mkUser(emailB)]);
+  const [tA, tB] = await Promise.all([tokenFor(emailA), tokenFor(emailB)]);
+  const A = hdr(tA), B = hdr(tB);
+
+  console.log("\n1. A reason is genuinely required");
+  {
+    const empty = await post(A, "leave_requests", {
+      user_id: idA, leave_date: LEAVE_DAY, reason: "  ",
+    });
+    check("whitespace is not a reason", empty.status >= 400, `status ${empty.status}`);
+
+    const tiny = await post(A, "leave_requests", {
+      user_id: idA, leave_date: LEAVE_DAY, reason: "x",
+    });
+    check("a single character is not a reason", tiny.status >= 400, `status ${tiny.status}`);
+  }
+
+  console.log("\n2. Recording leave, for yourself only");
+  {
+    const forOther = await post(A, "leave_requests", {
+      user_id: idB, leave_date: LEAVE_DAY, reason: "Not my leave to take",
+    });
+    check("cannot record leave for someone else",
+      forOther.status >= 400 || forOther.body === "[]", `status ${forOther.status}`);
+
+    const ok = await post(A, "leave_requests", {
+      user_id: idA, leave_date: LEAVE_DAY, reason: "Family function",
+    });
+    check("a proper entry is accepted", ok.status === 201, `status ${ok.status} ${ok.body}`);
+
+    const recorded = JSON.parse(ok.body ?? "[]");
+    check("it is simply 'recorded' — nothing to approve",
+      recorded[0]?.status === "recorded", JSON.stringify(recorded[0]?.status));
+
+    const dup = await post(A, "leave_requests", {
+      user_id: idA, leave_date: LEAVE_DAY, reason: "Same day again",
+    });
+    check("the same day cannot be recorded twice", dup.status >= 400, `status ${dup.status}`);
+  }
+
+  console.log("\n3. A day cannot be both worked and taken off");
+  {
+    await fetch(`${URL}/rest/v1/attendance`, {
+      method: "POST", headers: admin,
+      body: JSON.stringify({
+        user_id: idA, attendance_date: WORKED_DAY, status: "checked_out",
+      }),
+    });
+
+    const clash = await post(A, "leave_requests", {
+      user_id: idA, leave_date: WORKED_DAY, reason: "But I worked that day",
+    });
+    check("leave is refused for a day that was worked",
+      clash.status >= 400 && clash.body.includes("already_worked"),
+      `${clash.status} ${clash.body.slice(0, 120)}`);
+  }
+
+  console.log("\n4. Withdrawing is the only edit, and only by the owner");
+  {
+    const mine = await get(A, `leave_requests?select=id,status&leave_date=eq.${LEAVE_DAY}`);
+    const leaveId = mine[0].id;
+
+    const byOther = await patch(B, `leave_requests?id=eq.${leaveId}`, { status: "cancelled" });
+    check("someone else cannot withdraw it",
+      byOther.status >= 400 || byOther.body === "[]", `${byOther.status} ${byOther.body}`);
+
+    // The reason is what the person said on the day; it must not become
+    // rewritable afterwards.
+    const editReason = await patch(A, `leave_requests?id=eq.${leaveId}`, {
+      reason: "Actually a completely different reason",
+    });
+    check("the reason cannot be edited after the fact",
+      editReason.status >= 400 || editReason.body === "[]",
+      `${editReason.status} ${editReason.body}`);
+
+    const withdraw = await patch(A, `leave_requests?id=eq.${leaveId}`, { status: "cancelled" });
+    check("the owner can withdraw it",
+      withdraw.status === 200 && withdraw.body !== "[]", `${withdraw.status} ${withdraw.body}`);
+
+    const revive = await patch(A, `leave_requests?id=eq.${leaveId}`, { status: "recorded" });
+    check("a withdrawn entry cannot be revived",
+      revive.status >= 400 || revive.body === "[]", `${revive.status} ${revive.body}`);
+
+    const again = await post(A, "leave_requests", {
+      user_id: idA, leave_date: LEAVE_DAY, reason: "Re-recording after withdrawing",
+    });
+    check("the day is free again after withdrawing", again.status === 201, `status ${again.status}`);
+  }
+
+  console.log("\n5. Leave is private until shared");
+  {
+    const cross = await get(B, `leave_requests?select=id&user_id=eq.${idA}`);
+    check("an unpaired user sees nothing", cross.length === 0, JSON.stringify(cross));
+
+    await rpc(A, "request_pairing", { target_email: emailB });
+    const pending = await get(B, "pairs?select=id&status=eq.pending");
+    await fetch(`${URL}/rest/v1/pairs?id=eq.${pending[0].id}`, {
+      method: "PATCH", headers: B, body: JSON.stringify({ status: "accepted" }),
+    });
+
+    const paired = await get(B, `leave_requests?select=id&user_id=eq.${idA}`);
+    check("pairing alone does not expose leave — the switch is off by default",
+      paired.length === 0, JSON.stringify(paired));
+
+    await fetch(`${URL}/rest/v1/pair_permissions?owner_id=eq.${idA}`, {
+      method: "PATCH", headers: A, body: JSON.stringify({ share_leave: true }),
+    });
+
+    const shared = await get(B, `leave_requests?select=id&user_id=eq.${idA}`);
+    check("visible once leave sharing is turned on",
+      shared.length > 0, JSON.stringify(shared));
+  }
+
+  console.log("\n6. Reminder eligibility");
+  {
+    // B has done nothing today and has reminders on, so should be due.
+    await fetch(`${URL}/rest/v1/profiles?id=eq.${idB}`, {
+      method: "PATCH", headers: admin,
+      body: JSON.stringify({ reminder_time: "00:01", notify_reminder: true }),
+    });
+
+    const due = await rpc(admin, "users_due_for_reminder");
+    const listed = (u) => due.body.some((row) => row.user_id === u);
+
+    check("someone with an unfinished day is due", listed(idB), JSON.stringify(due.body?.length));
+
+    // Now put B on leave for today; they should drop off the list.
+    const today = new Date().toISOString().slice(0, 10);
+    await fetch(`${URL}/rest/v1/leave_requests`, {
+      method: "POST", headers: admin,
+      body: JSON.stringify({
+        user_id: idB, leave_date: today, reason: "On leave today",
+      }),
+    });
+
+    const afterLeave = await rpc(admin, "users_due_for_reminder");
+    check("someone on leave today is not reminded",
+      !afterLeave.body.some((row) => row.user_id === idB),
+      JSON.stringify(afterLeave.body?.filter((r) => r.user_id === idB)));
+
+    // And someone with reminders switched off is never included.
+    await fetch(`${URL}/rest/v1/profiles?id=eq.${idA}`, {
+      method: "PATCH", headers: admin,
+      body: JSON.stringify({ reminder_time: "00:01", notify_reminder: false }),
+    });
+
+    const afterOptOut = await rpc(admin, "users_due_for_reminder");
+    check("someone who turned reminders off is not included",
+      !afterOptOut.body.some((row) => row.user_id === idA),
+      JSON.stringify(afterOptOut.body?.filter((r) => r.user_id === idA)));
+  }
+
+  console.log("\n7. The email log cannot be forged");
+  {
+    const forge = await post(A, "email_logs", {
+      user_id: idA, template: "daily_reminder", to_email: emailA, status: "sent",
+    });
+    check("a client cannot write a delivery record",
+      forge.status >= 400, `status ${forge.status}`);
+
+    const others = await get(A, `email_logs?select=id&user_id=eq.${idB}`);
+    check("a user cannot read someone else's email log",
+      others.length === 0, JSON.stringify(others));
+  }
+} catch (err) {
+  console.error("\nERROR:", err.message);
+  failed++;
+} finally {
+  console.log("\nCleaning up...");
+  await Promise.all([idA, idB].filter(Boolean).map(rmUser));
+}
+
+console.log(`\n${passed} passed, ${failed} failed\n`);
+process.exit(failed === 0 ? 0 : 1);

@@ -162,17 +162,68 @@ Exit criteria: lunch video uploads, only signed URL access works, direct public 
 
 ## PHASE 6 — Leave + reminders + Resend
 
-**Status: [ ] pending**
+**Status: [x] COMPLETE**
+
+### Leave is information, not a request
+
+Migration 0012 first modelled leave the way an HR system would: pending,
+approved, rejected, reviewer columns, an approval setting. **That was the
+wrong shape**, and migration 0013 removed it.
+
+LoveTrack is two people keeping each other in the loop. "I'm off today" is a
+statement, not a petition — there is nobody whose permission is required,
+and an approval queue only adds a step that always ends in yes.
+
+Two states now: **recorded**, or **withdrawn** if it was entered by mistake.
+
+What is still enforced at the database level:
+
+- a reason is mandatory — whitespace does not count
+- a day cannot be both worked and taken off (trigger against `attendance`)
+- **the reason cannot be edited afterwards.** The whole entry can be
+  withdrawn, but not rewritten: it is what the person said on the day
+- leave is invisible to a partner unless `share_leave` is on, and it is off
+  by default
+
+### Email
+
+- every send is logged, **including failures** — an email that silently did
+  not arrive is worse than one that visibly bounced, because nobody goes
+  looking for it
+- duplicates are prevented by a unique index on
+  `(user_id, template, dedup_key)`, so a cron retry collides instead of
+  reminding somebody twice
+- templates deliberately say little: no location, no photo. Putting those in
+  an inbox takes them outside the app's permission model, somewhere neither
+  person controls
+
+### Reminders
+
+The cron runs **every 15 minutes**, not once at a fixed hour, because each
+user picks their own reminder time in their own timezone — there is no single
+moment when "the reminders go out".
+
+`CRON_SECRET` is compared in constant time, and the endpoint **refuses to run
+at all** when no secret is configured rather than defaulting to permissive —
+otherwise it would be an open mailer.
+
+Nobody is reminded who: has finished the day, is on leave, has reminders off,
+or has already been emailed today.
 
 Tasks:
-- [ ] `leave_requests` table + form (mandatory reason)
-- [ ] Admin approval flow (configurable on/off)
-- [ ] Resend setup (manual action — API key, domain)
-- [ ] Email templates (welcome, check-in, lunch, check-out, leave states, reminder, suspicious)
-- [ ] Cloudflare Cron trigger — har ~15 min chale, aur har user ke **apne** `reminder_time` (unke timezone me) ke hisaab se email bheje. Koi global reminder time nahi.
-- [ ] `email_logs` dedup logic (no duplicate reminders)
+- [x] `leave_requests` table + form (mandatory reason)
+- [x] ~~Admin approval flow~~ — removed; leave is information (migration 0013)
+- [x] Resend setup — `send.harshitsaini.in` verified, test email delivered to inbox (not spam)
+- [x] Email templates (welcome, reminder, leave recorded)
+- [x] Reminder endpoint — `/api/cron/reminders`, secret-protected
+- [x] `email_logs` dedup logic (no duplicate reminders)
+- [ ] Cloudflare Cron trigger wiring — Phase 12, alongside deployment
 
-Exit criteria: leave submit → email sent; missing-attendance cron sends reminder once/day only.
+Exit criteria: ✅ 20 adversarial API checks + 4 UI tests; 86 E2E total.
+
+> ⚠️ **Never run the reminder cron against the seeded E2E accounts with a
+> live Resend key.** They use `@lovetrack.dev`, a domain nobody owns, and
+> mailing it generates bounces that damage the sending domain's reputation.
 
 ## PHASE 7 — Partner activity
 

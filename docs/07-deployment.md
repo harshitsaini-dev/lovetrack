@@ -40,7 +40,59 @@ Ye ek asli technical decision hai jo dhyan maangta hai:
 
 **Recommended:** `@opennextjs/cloudflare` + Cloudflare Workers, custom domain `lovetrack.harshitsaini.in`.
 
-> ⚠️ **Pehle confirm karna hai:** `harshitsaini.in` aur `admin.harshitsaini.in` kis setup par chal rahe hain (Workers + OpenNext, ya Pages + next-on-pages)? Wahi pattern LoveTrack ke liye repeat karna sabse safe hoga — naya pattern seekhne ki zaroorat nahi padegi. Ye Phase 12 me confirm karenge.
+> ✅ **Confirm ho gaya (2026-08-20):** Cloudflare DNS me `harshitsaini.in` aur `admin.harshitsaini.in` dono **Worker** records hain (`portfolio-web`, `portfolio-admin`) — Pages nahi. Yaani tum already Next.js ko Cloudflare Workers par chala rahe ho.
+>
+> LoveTrack bhi wahi pattern follow karega: **`@opennextjs/cloudflare` + Workers**. Koi naya deployment model seekhne ki zaroorat nahi.
+
+## Email — Resend (configured 2026-08-20)
+
+| Cheez | Value |
+|---|---|
+| Sending domain | `send.harshitsaini.in` — **verified** |
+| Region | `us-east-1` |
+| From address | `LoveTrack <noreply@send.harshitsaini.in>` |
+| API key | `.env.local` me, verified working |
+
+Subdomain (`send.`) jaan-boojhkar use kiya, root domain nahi: agar kabhi `harshitsaini.in` par normal email (Google Workspace waghairah) lagao to koi conflict nahi hoga, aur transactional sending ki reputation personal email se alag rehti hai.
+
+### DNS records
+
+| Type | Name | Kaam |
+|---|---|---|
+| TXT | `resend._domainkey.send` | DKIM — signing. **Verification isi se hoti hai.** |
+| TXT | `send` | SPF |
+| MX | `send` | Bounce/complaint feedback |
+| TXT | `_dmarc` | Anti-spoofing policy |
+
+⚠️ Cloudflare me Name field me sirf `send` likhna hai — poora `send.harshitsaini.in` likhne par Cloudflare domain dobara jod deta hai aur record `send.send.harshitsaini.in` ban jaata hai. (Ye galti pehli baar hui thi; MX aur SPF dono wahan chale gaye the.)
+
+### DMARC ka roadmap
+
+`_dmarc` record **kabhi delete nahi karna** — ye permanent anti-spoofing protection hai. Sirf uski policy tight karni hai.
+
+| Kab | Value | Matlab |
+|---|---|---|
+| Set kiya 20 Aug 2026 | `p=none` | Sirf report, block kuch nahi |
+| **~10 Sep 2026** | `p=quarantine` | Fail hui mail spam folder me |
+| **~10 Oct 2026** | `p=reject` | Fail hui mail bilkul reject |
+
+Har baar wahi record **edit** karna hai, naya nahi banana.
+
+**Date asli shart nahi hai.** Aage tabhi badhna hai jab DMARC reports me dikhe ki *saari* legitimate mail pass ho rahi hai. Koi source fail dikhe to wahin rukna hai.
+
+### ⚠️ `p=reject` se pehle padhna
+
+`_dmarc` record `harshitsaini.in` par hai, isliye ye **poore domain aur saare subdomains** par lagta hai — sirf `send.` par nahi.
+
+`p=reject` ke baad `harshitsaini.in` se bheji gayi koi bhi doosri mail (Google Workspace, contact form, kuch bhi) agar SPF/DKIM aligned na ho, to **chupchaap reject** ho jayegi.
+
+**Recommended** — subdomain policy alag rakho:
+
+```
+v=DMARC1; p=none; sp=reject; rua=mailto:you@example.com
+```
+
+`sp=reject` = subdomains (jaise `send.`) par sakhti, root domain par dheel. LoveTrack protected rehta hai aur root domain baad me bina dikkat use ho sakta hai.
 
 ### Subdomain jodne ke steps (Phase 12)
 

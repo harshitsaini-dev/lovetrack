@@ -66,7 +66,7 @@ export default defineConfig({
       // the two projects fighting over the same records — the second run
       // finds the day already checked in. The mobile project, the primary
       // target, owns them; everything else still runs on both.
-      testIgnore: /(pairing|attendance|lunch)\.spec\.ts/,
+      testIgnore: /(pairing|attendance|lunch|leave)\.spec\.ts/,
     },
   ],
 
