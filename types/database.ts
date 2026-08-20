@@ -271,6 +271,14 @@ export type Database = {
         Args: { p_event_type: AttendanceEventType };
         Returns: string;
       };
+      check_rate_limit: {
+        Args: {
+          p_bucket: string;
+          p_max_attempts: number;
+          p_window_seconds: number;
+        };
+        Returns: unknown;
+      };
       get_public_settings: {
         Args: Record<string, never>;
         Returns: unknown;

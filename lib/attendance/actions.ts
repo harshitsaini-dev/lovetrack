@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 
 import { reverseGeocode } from "@/lib/location/geocode";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import type {
   AttendanceEventType,
@@ -65,6 +66,18 @@ export async function issueNonce(
   if (!parsed.success) return { ok: false, error: "invalid_event_type" };
 
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { ok: false, error: "not_authenticated" };
+
+  // Nonces are cheap to issue but not free — each one is a row, and a loop
+  // requesting them would grow the table without bound. The allowance is
+  // generous: retrying a failed capture is normal.
+  const limit = await checkRateLimit("attendanceNonce", user.id);
+  if (!limit.allowed) return { ok: false, error: "rate_limited" };
   const { data, error } = await supabase.rpc("issue_attendance_nonce", {
     p_event_type: parsed.data,
   });

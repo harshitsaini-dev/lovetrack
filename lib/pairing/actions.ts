@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import type { AuthFormState } from "@/lib/auth/actions";
+import {
+  checkRateLimitFor,
+  rateLimitMessage,
+} from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import type {
   PairingRequestResult,
@@ -44,6 +48,15 @@ export async function sendPairingRequest(
 
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0].message };
+  }
+
+  // This is the account-enumeration surface. The reply is identical for a
+  // registered and an unknown address, so volume is the only thing left to
+  // learn from — and this closes that.
+  const limit = await checkRateLimitFor("pairingRequest", parsed.data);
+
+  if (!limit.allowed) {
+    return { ok: false, error: rateLimitMessage(limit) };
   }
 
   const supabase = await createClient();

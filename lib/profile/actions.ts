@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import type { AuthFormState } from "@/lib/auth/actions";
+import {
+  checkRateLimitFor,
+  rateLimitMessage,
+} from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import {
   changePasswordSchema,
@@ -97,6 +101,13 @@ export async function changePassword(
 
   if (!user?.email) {
     return { ok: false, error: "Session expire ho gaya. Dobara login karein." };
+  }
+
+  // The current-password check below is a password guess like any other,
+  // so it needs the same protection as the login form.
+  const limit = await checkRateLimitFor("passwordChange", user.email);
+  if (!limit.allowed) {
+    return { ok: false, error: rateLimitMessage(limit) };
   }
 
   const { error: reauthError } = await supabase.auth.signInWithPassword({

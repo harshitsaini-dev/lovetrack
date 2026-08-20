@@ -8,6 +8,10 @@ import {
   REMEMBER_COOKIE,
   rememberCookieOptions,
 } from "@/lib/auth/remember";
+import {
+  checkRateLimitFor,
+  rateLimitMessage,
+} from "@/lib/security/rate-limit";
 import { getAppUrl } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -65,6 +69,14 @@ export async function login(
     return { ok: false, error: parsed.error.issues[0].message };
   }
 
+  // Counted before the attempt, not after: a check that only runs on
+  // failure can be sidestepped by an attacker who guesses correctly.
+  const limit = await checkRateLimitFor("login", parsed.data.email);
+
+  if (!limit.allowed) {
+    return { ok: false, error: rateLimitMessage(limit) };
+  }
+
   // Recorded before signing in, because the sign-in is what writes the auth
   // cookies — and they need to already know whether to persist.
   const remember = formData.get("remember") === "on";
@@ -102,6 +114,12 @@ export async function register(
   }
 
   const { fullName, email, password } = parsed.data;
+
+  const limit = await checkRateLimitFor("register", email);
+  if (!limit.allowed) {
+    return { ok: false, error: rateLimitMessage(limit) };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signUp({
@@ -135,6 +153,15 @@ export async function requestPasswordReset(
 
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0].message };
+  }
+
+  const limit = await checkRateLimitFor("passwordReset", parsed.data.email);
+
+  if (!limit.allowed) {
+    // Deliberately the same vague wording as the success case would use
+    // for an unknown address — the limit must not become a way to learn
+    // which addresses exist.
+    return { ok: false, error: rateLimitMessage(limit) };
   }
 
   const supabase = await createClient();

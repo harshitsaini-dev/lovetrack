@@ -9,6 +9,8 @@ const ERRORS: Record<string, string> = {
   not_authenticated: "Session expire ho gaya. Dobara login karein.",
   account_suspended: "Aapka account suspend hai.",
 
+  rate_limited:
+    "Bahut zyada koshishein ho gayin. Thodi der baad dobara try karein.",
   invalid_nonce: "Ye request valid nahi hai. Page refresh karke dobara try karein.",
   nonce_already_used:
     "Ye attempt pehle hi use ho chuka hai. Naya capture shuru karein.",

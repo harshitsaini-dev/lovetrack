@@ -27,8 +27,17 @@ function isProtected(pathname: string): boolean {
  * route-level auth. Admin *authorization* is enforced separately in the
  * admin layout and by RLS — middleware only checks authentication.
  */
-export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
+export async function updateSession(
+  request: NextRequest,
+  requestHeaders?: Headers,
+) {
+  // Forwarding the headers lets the proxy pass a CSP nonce through to the
+  // render, so Next can stamp it onto the scripts it injects.
+  const init = requestHeaders
+    ? { request: { headers: requestHeaders } }
+    : { request };
+
+  let response = NextResponse.next(init);
 
   const supabase = createServerClient<Database>(
     getSupabaseUrl(),
@@ -48,7 +57,7 @@ export async function updateSession(request: NextRequest) {
           for (const { name, value } of cookiesToSet) {
             request.cookies.set(name, value);
           }
-          response = NextResponse.next({ request });
+          response = NextResponse.next(init);
           for (const { name, value, options } of cookiesToSet) {
             response.cookies.set(
               name,

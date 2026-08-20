@@ -1,18 +1,18 @@
-# Deployment & ₹0 Setup Guide
+﻿# Deployment & â‚¹0 Setup Guide
 
 ## Deployment topology
 
 ```text
 GitHub
-   ↓
+   â†“
 Cloudflare Pages
-   ↓
+   â†“
 LoveTrack PWA
 
-Supabase → DB / Auth
-Cloudflare R2 → photos/videos
-Cloudflare Worker → security/API/cron
-Resend → emails
+Supabase â†’ DB / Auth
+Cloudflare R2 â†’ photos/videos
+Cloudflare Worker â†’ security/API/cron
+Resend â†’ emails
 ```
 
 ## Target domain: `lovetrack.harshitsaini.in`
@@ -22,13 +22,13 @@ Resend → emails
 | Cheez | Status |
 |---|---|
 | Registrar | BigRock |
-| DNS | **Cloudflare** (`gabe.ns.cloudflare.com`, `sreeni.ns.cloudflare.com`) — BigRock sirf registrar hai |
+| DNS | **Cloudflare** (`gabe.ns.cloudflare.com`, `sreeni.ns.cloudflare.com`) â€” BigRock sirf registrar hai |
 | `harshitsaini.in` | Next.js app, Cloudflare proxied (orange cloud) |
 | `admin.harshitsaini.in` | Next.js app, Cloudflare proxied |
-| `lovetrack.harshitsaini.in` | abhi exist nahi karta — ye humara target hai |
-| Vercel headers | **nahi mile** — yaani existing apps Cloudflare par hi chal rahe hain |
+| `lovetrack.harshitsaini.in` | abhi exist nahi karta â€” ye humara target hai |
+| Vercel headers | **nahi mile** â€” yaani existing apps Cloudflare par hi chal rahe hain |
 
-Iska matlab: **nameservers already Cloudflare par hain, isliye subdomain add karna aasan hai.** BigRock me kuch nahi chhedna — sab Cloudflare dashboard se hoga.
+Iska matlab: **nameservers already Cloudflare par hain, isliye subdomain add karna aasan hai.** BigRock me kuch nahi chhedna â€” sab Cloudflare dashboard se hoga.
 
 ### Next.js 16 ko Cloudflare par kaise deploy karein
 
@@ -36,19 +36,19 @@ Ye ek asli technical decision hai jo dhyan maangta hai:
 
 - `@cloudflare/next-on-pages` (purana Pages adapter) ab **deprecated** hai aur Next.js 16 App Router + Server Actions ke saath reliable nahi hai.
 - Current supported path: **`@opennextjs/cloudflare`**, jo app ko **Cloudflare Workers** par deploy karta hai (Pages par nahi).
-- LoveTrack me SSR, Server Actions, Route Handlers aur `proxy.ts` — sab hain, isliye static export bilkul possible nahi.
+- LoveTrack me SSR, Server Actions, Route Handlers aur `proxy.ts` â€” sab hain, isliye static export bilkul possible nahi.
 
 **Recommended:** `@opennextjs/cloudflare` + Cloudflare Workers, custom domain `lovetrack.harshitsaini.in`.
 
-> ✅ **Confirm ho gaya (2026-08-20):** Cloudflare DNS me `harshitsaini.in` aur `admin.harshitsaini.in` dono **Worker** records hain (`portfolio-web`, `portfolio-admin`) — Pages nahi. Yaani tum already Next.js ko Cloudflare Workers par chala rahe ho.
+> âœ… **Confirm ho gaya (2026-08-20):** Cloudflare DNS me `harshitsaini.in` aur `admin.harshitsaini.in` dono **Worker** records hain (`portfolio-web`, `portfolio-admin`) â€” Pages nahi. Yaani tum already Next.js ko Cloudflare Workers par chala rahe ho.
 >
 > LoveTrack bhi wahi pattern follow karega: **`@opennextjs/cloudflare` + Workers**. Koi naya deployment model seekhne ki zaroorat nahi.
 
-## Email — Resend (configured 2026-08-20)
+## Email â€” Resend (configured 2026-08-20)
 
 | Cheez | Value |
 |---|---|
-| Sending domain | `send.harshitsaini.in` — **verified** |
+| Sending domain | `send.harshitsaini.in` â€” **verified** |
 | Region | `us-east-1` |
 | From address | `LoveTrack <noreply@send.harshitsaini.in>` |
 | API key | `.env.local` me, verified working |
@@ -59,16 +59,16 @@ Subdomain (`send.`) jaan-boojhkar use kiya, root domain nahi: agar kabhi `harshi
 
 | Type | Name | Kaam |
 |---|---|---|
-| TXT | `resend._domainkey.send` | DKIM — signing. **Verification isi se hoti hai.** |
+| TXT | `resend._domainkey.send` | DKIM â€” signing. **Verification isi se hoti hai.** |
 | TXT | `send` | SPF |
 | MX | `send` | Bounce/complaint feedback |
 | TXT | `_dmarc` | Anti-spoofing policy |
 
-⚠️ Cloudflare me Name field me sirf `send` likhna hai — poora `send.harshitsaini.in` likhne par Cloudflare domain dobara jod deta hai aur record `send.send.harshitsaini.in` ban jaata hai. (Ye galti pehli baar hui thi; MX aur SPF dono wahan chale gaye the.)
+âš ï¸ Cloudflare me Name field me sirf `send` likhna hai â€” poora `send.harshitsaini.in` likhne par Cloudflare domain dobara jod deta hai aur record `send.send.harshitsaini.in` ban jaata hai. (Ye galti pehli baar hui thi; MX aur SPF dono wahan chale gaye the.)
 
 ### DMARC ka roadmap
 
-`_dmarc` record **kabhi delete nahi karna** — ye permanent anti-spoofing protection hai. Sirf uski policy tight karni hai.
+`_dmarc` record **kabhi delete nahi karna** â€” ye permanent anti-spoofing protection hai. Sirf uski policy tight karni hai.
 
 | Kab | Value | Matlab |
 |---|---|---|
@@ -80,13 +80,13 @@ Har baar wahi record **edit** karna hai, naya nahi banana.
 
 **Date asli shart nahi hai.** Aage tabhi badhna hai jab DMARC reports me dikhe ki *saari* legitimate mail pass ho rahi hai. Koi source fail dikhe to wahin rukna hai.
 
-### ⚠️ `p=reject` se pehle padhna
+### âš ï¸ `p=reject` se pehle padhna
 
-`_dmarc` record `harshitsaini.in` par hai, isliye ye **poore domain aur saare subdomains** par lagta hai — sirf `send.` par nahi.
+`_dmarc` record `harshitsaini.in` par hai, isliye ye **poore domain aur saare subdomains** par lagta hai â€” sirf `send.` par nahi.
 
 `p=reject` ke baad `harshitsaini.in` se bheji gayi koi bhi doosri mail (Google Workspace, contact form, kuch bhi) agar SPF/DKIM aligned na ho, to **chupchaap reject** ho jayegi.
 
-**Recommended** — subdomain policy alag rakho:
+**Recommended** â€” subdomain policy alag rakho:
 
 ```
 v=DMARC1; p=none; sp=reject; rua=mailto:you@example.com
@@ -96,23 +96,23 @@ v=DMARC1; p=none; sp=reject; rua=mailto:you@example.com
 
 ### Subdomain jodne ke steps (Phase 12)
 
-1. Cloudflare dashboard → Workers & Pages → LoveTrack project
-2. **Custom domains** → Add → `lovetrack.harshitsaini.in`
-3. Zone same account me hai, isliye Cloudflare **CNAME khud bana dega** — manually DNS record add karne ki zaroorat nahi
+1. Cloudflare dashboard â†’ Workers & Pages â†’ LoveTrack project
+2. **Custom domains** â†’ Add â†’ `lovetrack.harshitsaini.in`
+3. Zone same account me hai, isliye Cloudflare **CNAME khud bana dega** â€” manually DNS record add karne ki zaroorat nahi
 4. SSL certificate automatically issue hoga (kuch minute lag sakte hain)
-5. Supabase → **Authentication → URL Configuration** update karo:
+5. Supabase â†’ **Authentication â†’ URL Configuration** update karo:
    - Site URL: `https://lovetrack.harshitsaini.in`
    - Redirect URLs me add karo: `https://lovetrack.harshitsaini.in/**`
 6. `NEXT_PUBLIC_APP_URL=https://lovetrack.harshitsaini.in` Cloudflare env vars me set karo (warna verification emails localhost par point karenge)
 
-Initial testing URL: `lovetrack.<something>.workers.dev` — custom domain uske baad.
+Initial testing URL: `lovetrack.<something>.workers.dev` â€” custom domain uske baad.
 
-## GitHub — status: **CLI already configured** ✅
+## GitHub â€” status: **CLI already configured** âœ…
 
 User (Harshit) ne confirm kiya hai ki **GitHub CLI (`gh`) already install + configure ho chuka hai**. Iska matlab:
 
 - `git init` ke baad `gh repo create` se directly naya repo bana sakte hain (public/private choose karke).
-- Auth/token setup dobara nahi karna padega — `gh auth status` se verify kar sakte hain.
+- Auth/token setup dobara nahi karna padega â€” `gh auth status` se verify kar sakte hain.
 - Cloudflare Pages ka Git-integration setup GitHub repo push hone ke baad hi connect hoga.
 
 Jab Phase 1 shuru hoga, ye steps honge:
@@ -128,14 +128,14 @@ git push -u origin main
 
 (Exact repo name/visibility Phase 1 ke time confirm kar lenge.)
 
-## Required external accounts (manual actions — abhi pending)
+## Required external accounts (manual actions â€” abhi pending)
 
 | Service | Kya chahiye | Kahan use hoga |
 |---|---|---|
 | Supabase | Project URL, anon key, service role key | Auth + DB (Phase 2) |
 | Cloudflare | Account, Pages project, R2 bucket, Workers, Cron trigger | Media + edge security (Phase 5, 6, 9) |
 | Resend | API key, verified sender domain | Emails (Phase 6) |
-| GitHub | ✅ already done (CLI configured) | Source control (Phase 1, 12) |
+| GitHub | âœ… already done (CLI configured) | Source control (Phase 1, 12) |
 
 Jab bhi in accounts me se koi setup zaroori hoga, us exact point par ye 5 cheezein batayi jayengi:
 1. website kaunsi kholni hai
@@ -144,21 +144,21 @@ Jab bhi in accounts me se koi setup zaroori hoga, us exact point par ye 5 cheeze
 4. exact `.env` key kis me daalni hai
 5. success kaise verify karein
 
-## Free-tier limits (₹0 budget ke liye important)
+## Free-tier limits (â‚¹0 budget ke liye important)
 
 ```text
-GitHub               ₹0
-Cloudflare Pages     ₹0 (500 builds/month)
-Cloudflare Workers   ₹0 within quota (100k req/day)
-Cloudflare R2        ₹0 within 10GB/month storage, no egress cost
-Supabase             ₹0 within free quota (500MB DB, 5GB egress)
-Resend               ₹0 within 3,000 emails/month (100/day)
-OpenStreetMap        ₹0 (no key needed)
+GitHub               â‚¹0
+Cloudflare Pages     â‚¹0 (500 builds/month)
+Cloudflare Workers   â‚¹0 within quota (100k req/day)
+Cloudflare R2        â‚¹0 within 10GB/month storage, no egress cost
+Supabase             â‚¹0 within free quota (500MB DB, 5GB egress)
+Resend               â‚¹0 within 3,000 emails/month (100/day)
+OpenStreetMap        â‚¹0 (no key needed)
 ```
 
-**Biggest quota risk: lunch videos.** ~15s video ≈ 1-3MB — bahut users ke saath R2 storage jaldi consume ho sakta hai. Isliye duration limit, compression, aur retention policy enforce karna mandatory hai (dekhein [03-security-anti-fraud.md](./03-security-anti-fraud.md)).
+**Biggest quota risk: lunch videos.** ~15s video â‰ˆ 1-3MB â€” bahut users ke saath R2 storage jaldi consume ho sakta hai. Isliye duration limit, compression, aur retention policy enforce karna mandatory hai (dekhein [03-security-anti-fraud.md](./03-security-anti-fraud.md)).
 
-## Secrets — never commit
+## Secrets â€” never commit
 
 ```text
 .env
@@ -193,8 +193,8 @@ Resend API keys
 
 ## Final deployment checklist (Phase 12)
 
-- [ ] `lint`, `typecheck`, `test`, `build` — sab clean
+- [ ] `lint`, `typecheck`, `test`, `build` â€” sab clean
 - [ ] Cloudflare Pages connected to GitHub repo, auto-deploy on push to `main`
 - [ ] All env vars set in Cloudflare Pages dashboard (not committed)
-- [ ] Smoke test on deployed URL: register → pair → check-in → lunch → check-out → leave → admin view
+- [ ] Smoke test on deployed URL: register â†’ pair â†’ check-in â†’ lunch â†’ check-out â†’ leave â†’ admin view
 - [ ] README finalized with all sections above

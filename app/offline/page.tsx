@@ -7,11 +7,12 @@ export const metadata: Metadata = { title: "Offline" };
 /**
  * Served by the service worker when a navigation fails with no network.
  *
- * Static on purpose: it has to be cached ahead of time, so it cannot depend
- * on anything the server would have to provide at request time.
+ * NOT force-static, despite being cached ahead of time. A statically
+ * prerendered page carries a build-time CSP nonce, which cannot match the
+ * per-request one — so it was the only page still throwing a CSP
+ * violation. The service worker caches whatever the response is at install
+ * time, so rendering it per-request costs nothing here.
  */
-export const dynamic = "force-static";
-
 export default function OfflinePage() {
   return <OfflineScreen />;
 }
