@@ -3,14 +3,15 @@ import { redirect } from "next/navigation";
 
 import { CaptureFlow } from "@/components/attendance/capture-flow";
 import { requireProfile } from "@/lib/auth/session";
-import { getChallengePhrase } from "@/lib/attendance/challenge";
+import { getChallenge } from "@/lib/attendance/challenge";
 import { getTodayAttendance } from "@/lib/attendance/queries";
+import { getPrimaryPartnerName } from "@/lib/pairing/queries";
 
 export const metadata: Metadata = { title: "Check out" };
 
 export default async function CheckOutPage() {
   const profile = await requireProfile();
-  const { attendance, today } = await getTodayAttendance(profile.timezone);
+  const { attendance } = await getTodayAttendance(profile.timezone);
 
   if (!attendance || attendance.status === "not_started") {
     redirect("/app/dashboard");
@@ -18,6 +19,8 @@ export default async function CheckOutPage() {
   if (attendance.status === "checked_out") {
     redirect("/app/dashboard");
   }
+
+  const partnerName = await getPrimaryPartnerName();
 
   return (
     <div className="space-y-5">
@@ -31,7 +34,7 @@ export default async function CheckOutPage() {
       <CaptureFlow
         userId={profile.id}
         eventType="check_out"
-        challenge={getChallengePhrase(profile.id, today)}
+        challenge={getChallenge("check_out", partnerName)}
       />
     </div>
   );

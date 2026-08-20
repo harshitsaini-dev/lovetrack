@@ -32,6 +32,7 @@ import {
   getLocationErrorMessage,
   type CapturedLocation,
 } from "@/lib/location/capture";
+import type { Challenge } from "@/lib/attendance/challenge";
 import { uploadAttendancePhoto } from "@/lib/media/upload";
 import type {
   AttendanceEventType,
@@ -43,7 +44,7 @@ type Stage = "capture" | "confirm" | "submitting" | "done";
 type CaptureFlowProps = {
   userId: string;
   eventType: AttendanceEventType;
-  challenge: string;
+  challenge: Challenge;
 };
 
 function deviceLabel(): string {
@@ -243,13 +244,13 @@ export function CaptureFlow({
       <div className="space-y-4">
         <Alert>
           <ShieldCheck className="size-4" aria-hidden />
-          <AlertDescription>
-            Camera me ye dikhayein ya bolein:{" "}
-            <strong className="font-semibold">{challenge}</strong>
-          </AlertDescription>
+          <AlertDescription>{challenge.instruction}</AlertDescription>
         </Alert>
 
-        <CameraCapture challenge={challenge} onCaptured={handleCaptured} />
+        <CameraCapture
+          challenge={challenge.overlay}
+          onCaptured={handleCaptured}
+        />
 
         <p className="text-center text-xs text-muted-foreground">
           Sirf live camera — gallery se photo choose karne ka option nahi hai.

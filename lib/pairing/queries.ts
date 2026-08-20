@@ -27,6 +27,20 @@ type PartnerRow = Pick<Profile, "id" | "full_name" | "email" | "avatar_url">;
  * additional filtering to do here — the policy is the authorization, not
  * anything written below.
  */
+/**
+ * The name to use in a capture prompt.
+ *
+ * Takes the first accepted pairing. Almost everyone has exactly one; if
+ * someone has more, greeting the earliest is better than greeting nobody.
+ */
+export async function getPrimaryPartnerName(): Promise<string | null> {
+  // Accepted pairings only. Greeting someone who has not accepted the
+  // request yet would be putting words in their mouth.
+  const { accepted } = await getPairsForCurrentUser();
+
+  return accepted[0]?.partner.full_name ?? null;
+}
+
 export async function getPairsForCurrentUser(): Promise<{
   accepted: PairView[];
   incoming: PairView[];

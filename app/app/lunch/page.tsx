@@ -3,10 +3,14 @@ import { redirect } from "next/navigation";
 
 import { CaptureFlow } from "@/components/attendance/capture-flow";
 import { LunchFlow } from "@/components/lunch/lunch-flow";
-import { getChallengePhrase } from "@/lib/attendance/challenge";
+import {
+  getChallenge,
+  getLunchVideoChallenge,
+} from "@/lib/attendance/challenge";
 import { getTodayAttendance } from "@/lib/attendance/queries";
 import { requireProfile } from "@/lib/auth/session";
 import { getTodayLunchProof } from "@/lib/lunch/queries";
+import { getPrimaryPartnerName } from "@/lib/pairing/queries";
 
 export const metadata: Metadata = { title: "Lunch" };
 
@@ -17,12 +21,13 @@ export const metadata: Metadata = { title: "Lunch" };
  */
 export default async function LunchPage() {
   const profile = await requireProfile();
-  const { attendance, today } = await getTodayAttendance(profile.timezone);
-  const challenge = getChallengePhrase(profile.id, today);
+  const { attendance } = await getTodayAttendance(profile.timezone);
 
   if (!attendance || attendance.status === "not_started") {
     redirect("/app/dashboard");
   }
+
+  const partnerName = await getPrimaryPartnerName();
 
   // Lunch not started yet.
   if (attendance.status === "checked_in") {
@@ -38,7 +43,7 @@ export default async function LunchPage() {
         <CaptureFlow
           userId={profile.id}
           eventType="lunch_start"
-          challenge={challenge}
+          challenge={getChallenge("lunch_start", partnerName)}
         />
       </div>
     );
@@ -58,7 +63,7 @@ export default async function LunchPage() {
         <CaptureFlow
           userId={profile.id}
           eventType="lunch_end"
-          challenge={challenge}
+          challenge={getChallenge("lunch_end", partnerName)}
         />
       </div>
     );
@@ -75,11 +80,14 @@ export default async function LunchPage() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Lunch proof</h1>
         <p className="text-sm text-muted-foreground">
-          5-20 second ki video — khana dikhayein aur phrase bolein.
+          5-20 second ki video — khana khate hue banayein.
         </p>
       </header>
 
-      <LunchFlow userId={profile.id} challenge={challenge} />
+      <LunchFlow
+        userId={profile.id}
+        challenge={getLunchVideoChallenge(partnerName)}
+      />
     </div>
   );
 }

@@ -222,17 +222,27 @@ try {
       method: "PATCH", headers: B, body: JSON.stringify({ status: "accepted" }),
     });
 
-    const shared = JSON.parse((await get(B, `attendance_events?select=id&user_id=eq.${idA}`)).body);
-    check("once paired, a partner sees shared attendance events",
-      shared.length > 0, JSON.stringify(shared));
+    // Since migration 0015 a partner has NO direct read policy here —
+    // latitude sits on the same row as the timestamp, and a row policy
+    // cannot grant one without the other. Access is via the function.
+    const stillDirect = JSON.parse(
+      (await get(B, `attendance_events?select=id&user_id=eq.${idA}`)).body,
+    );
+    check("even paired, a partner cannot read the table directly",
+      stillDirect.length === 0, JSON.stringify(stillDirect));
+
+    const viaFunction = (await rpc(B, "get_partner_events", { p_partner_id: idA })).body;
+    check("once paired, a partner sees shared events through the function",
+      Array.isArray(viaFunction) && viaFunction.length > 0,
+      JSON.stringify(viaFunction).slice(0, 120));
 
     // Turn A's attendance sharing off; B should immediately lose access.
     await fetch(`${URL}/rest/v1/pair_permissions?owner_id=eq.${idA}`, {
       method: "PATCH", headers: A, body: JSON.stringify({ share_attendance: false }),
     });
-    const revoked = JSON.parse((await get(B, `attendance_events?select=id&user_id=eq.${idA}`)).body);
+    const revoked = (await rpc(B, "get_partner_events", { p_partner_id: idA })).body;
     check("turning sharing off takes effect immediately",
-      revoked.length === 0, JSON.stringify(revoked));
+      Array.isArray(revoked) && revoked.length === 0, JSON.stringify(revoked));
 
     const riskAfter = JSON.parse((await get(B, `risk_events?select=id&user_id=eq.${idA}`)).body);
     check("a partner never sees risk events, even while paired",

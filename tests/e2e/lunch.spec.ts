@@ -99,6 +99,10 @@ test("the day walks check-in, lunch start, lunch end, then proof", async ({
   await page.goto("/app/lunch");
   await expect(page.getByRole("heading", { name: "Lunch proof" })).toBeVisible();
 
+  // The instruction says to record while eating, and asks for the phrase.
+  await expect(page.getByText(/khana khate hue video banayein/i)).toBeVisible();
+  await expect(page.getByText(/khana khalo/i).first()).toBeVisible();
+
   // No file picker here either — the clip must come from a live stream.
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
 

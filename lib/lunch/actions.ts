@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 
+import { getSignedUrlTtl } from "@/lib/settings/read";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { LUNCH_MAX_SECONDS, LUNCH_MIN_SECONDS } from "@/lib/media/record";
 
@@ -77,7 +78,7 @@ export async function getLunchProofUrl(
 
   if (!proof) return { ok: false, error: "not_found" };
 
-  const ttl = Number(process.env.R2_SIGNED_URL_TTL_SECONDS ?? 300);
+  const ttl = await getSignedUrlTtl();
 
   // Signing happens with the service role deliberately. Storage policies
   // key off the owning user's path, and there is intentionally no policy

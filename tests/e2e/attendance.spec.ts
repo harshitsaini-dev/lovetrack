@@ -56,11 +56,15 @@ test("the check-in page never offers a file picker", async ({ page }) => {
   await expect(page.getByText(/sirf live camera/i)).toBeVisible();
 });
 
-test("the challenge phrase is shown before capture", async ({ page }) => {
+test("the capture prompt greets, and names a partner when there is one", async ({
+  page,
+}) => {
   await login(page);
   await page.goto("/app/check-in");
 
-  await expect(page.getByText(/camera me ye dikhayein ya bolein/i)).toBeVisible();
+  // "Hello" on its own without a pairing; "Hello, <name>" once paired.
+  await expect(page.getByText(/camera me dekhkar bolein/i)).toBeVisible();
+  await expect(page.getByText(/hello/i).first()).toBeVisible();
 });
 
 test("a full check-in records the day and shows the timeline", async ({

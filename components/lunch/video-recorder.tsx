@@ -147,7 +147,7 @@ export function VideoRecorder({ challenge, onRecorded }: VideoRecorderProps) {
 
         <div className="absolute inset-x-0 top-0 p-3">
           <p className="rounded-lg bg-black/60 px-3 py-2 text-center text-sm font-medium text-white backdrop-blur">
-            Khana dikhayein aur bolein: {challenge}
+            {challenge}
           </p>
         </div>
 

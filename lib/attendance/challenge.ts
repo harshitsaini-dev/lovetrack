@@ -1,53 +1,68 @@
+import type { AttendanceEventType } from "@/types/attendance";
+
 /**
- * Per-capture challenge phrase.
+ * What the user is asked to say on camera.
  *
- * A prerecorded clip cannot know today's words, so holding up or saying the
- * phrase raises the cost of replaying old footage. It is a deterrent, not
- * proof — nothing here verifies that the phrase was actually shown; that
- * would need liveness detection, which is out of scope.
+ * The phrase names their partner: "Hello, Priya" rather than a random
+ * code. It reads like something a person would actually say, which is the
+ * point — a capture that feels like a message to someone is a different
+ * experience from reciting a serial number at a lens.
  *
- * Deterministic per user per day, so the phrase does not change if the page
- * is refreshed mid-capture.
+ * On its security value, plainly: this was never proof. Nothing verifies
+ * the phrase was spoken — that would need liveness detection, which is out
+ * of scope. It is a deterrent against holding up an old photo, and naming
+ * a partner makes it a slightly weaker one than a rotating code would be,
+ * because it does not change day to day.
+ *
+ * That trade is deliberate. The controls that actually do the work are the
+ * single-use nonce, the live camera stream and the freshness of the
+ * location fix; the phrase was always the softest of them.
  */
 
-const COLOURS = [
-  "BLUE",
-  "ROSE",
-  "GREEN",
-  "AMBER",
-  "VIOLET",
-  "CORAL",
-  "TEAL",
-  "INDIGO",
-];
+const FALLBACK_NAME = "apne partner";
 
-const NOUNS = [
-  "ROSE",
-  "MOON",
-  "RIVER",
-  "STAR",
-  "CLOUD",
-  "FLAME",
-  "STONE",
-  "WAVE",
-];
-
-/** Small, stable string hash — not cryptographic, just for picking words. */
-function hash(input: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return Math.abs(h);
+function firstName(fullName: string | null | undefined): string | null {
+  const trimmed = fullName?.trim();
+  if (!trimmed) return null;
+  return trimmed.split(/\s+/)[0];
 }
 
-export function getChallengePhrase(userId: string, date: string): string {
-  const h = hash(`${userId}:${date}`);
+export type Challenge = {
+  /** Shown over the camera preview — short, readable at a glance. */
+  overlay: string;
+  /** The fuller instruction above it. */
+  instruction: string;
+};
 
-  const colour = COLOURS[h % COLOURS.length];
-  const noun = NOUNS[Math.floor(h / COLOURS.length) % NOUNS.length];
-  const number = (h % 90) + 10;
+export function getChallenge(
+  eventType: AttendanceEventType,
+  partnerName: string | null,
+): Challenge {
+  const name = firstName(partnerName);
 
-  return `${colour} ${noun} ${number}`;
+  if (eventType === "lunch_end") {
+    return {
+      overlay: name ? `Khana khalo, ${name}` : "Khana khalo",
+      instruction: name
+        ? `Camera me khana dikhayein aur bolein: "Khana khalo, ${name}"`
+        : `Camera me khana dikhayein aur bolein: "Khana khalo"`,
+    };
+  }
+
+  return {
+    overlay: name ? `Hello, ${name}` : "Hello",
+    instruction: name
+      ? `Camera me dekhkar bolein: "Hello, ${name}"`
+      : `Camera me dekhkar bolein: "Hello"`,
+  };
+}
+
+/** The lunch clip has its own instruction, since it is a video not a photo. */
+export function getLunchVideoChallenge(partnerName: string | null): Challenge {
+  const name = firstName(partnerName) ?? FALLBACK_NAME;
+
+  return {
+    overlay: `Khana khate hue: "Khana khalo, ${name}"`,
+    instruction: `Khana khate hue video banayein aur bolein: "Khana khalo, ${name}"`,
+  };
 }

@@ -271,6 +271,34 @@ export type Database = {
         Args: { p_event_type: AttendanceEventType };
         Returns: string;
       };
+      get_public_settings: {
+        Args: Record<string, never>;
+        Returns: unknown;
+      };
+      admin_stats: {
+        Args: Record<string, never>;
+        Returns: unknown;
+      };
+      admin_list_users: {
+        Args: { p_search?: string | null; p_limit?: number };
+        Returns: unknown[];
+      };
+      admin_set_user_status: {
+        Args: {
+          p_user_id: string;
+          p_status: AccountStatus;
+          p_reason?: string | null;
+        };
+        Returns: unknown;
+      };
+      admin_flagged_events: {
+        Args: { p_limit?: number };
+        Returns: unknown[];
+      };
+      admin_log_media_view: {
+        Args: { p_target_user_id: string; p_kind: string; p_path: string };
+        Returns: unknown;
+      };
       get_partner_permissions: {
         Args: { p_partner_id: string };
         Returns: unknown;

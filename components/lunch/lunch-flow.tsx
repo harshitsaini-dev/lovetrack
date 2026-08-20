@@ -8,6 +8,7 @@ import { VideoRecorder } from "@/components/lunch/video-recorder";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import type { Challenge } from "@/lib/attendance/challenge";
 import { recordLunchProof } from "@/lib/lunch/actions";
 import { getLunchErrorMessage } from "@/lib/lunch/messages";
 import { uploadLunchProof } from "@/lib/media/upload";
@@ -27,7 +28,7 @@ export function LunchFlow({
   challenge,
 }: {
   userId: string;
-  challenge: string;
+  challenge: Challenge;
 }) {
   const router = useRouter();
 
@@ -76,7 +77,7 @@ export function LunchFlow({
       videoPath: path,
       durationS: Number(clip.result.durationS.toFixed(2)),
       sizeBytes: clip.result.blob.size,
-      challengePhrase: challenge,
+      challengePhrase: challenge.overlay,
     });
 
     if (!outcome.ok) {
@@ -121,13 +122,13 @@ export function LunchFlow({
       <div className="space-y-4">
         <Alert>
           <Utensils className="size-4" aria-hidden />
-          <AlertDescription>
-            Apna khana camera me dikhayein aur bolein:{" "}
-            <strong className="font-semibold">{challenge}</strong>
-          </AlertDescription>
+          <AlertDescription>{challenge.instruction}</AlertDescription>
         </Alert>
 
-        <VideoRecorder challenge={challenge} onRecorded={handleRecorded} />
+        <VideoRecorder
+          challenge={challenge.overlay}
+          onRecorded={handleRecorded}
+        />
 
         <p className="text-center text-xs text-muted-foreground">
           Sirf live recording — gallery se video choose karne ka option nahi hai.

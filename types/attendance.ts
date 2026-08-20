@@ -94,7 +94,27 @@ export type SystemSettings = {
   media_retention_days: number;
   /** Age at which whole attendance rows go; 0 keeps them forever. */
   record_retention_days: number;
+
+  /** Seconds a capture nonce stays valid. */
+  nonce_ttl_seconds: number;
+  lunch_min_seconds: number;
+  lunch_max_seconds: number;
+  lunch_max_bytes: number;
+  /** Seconds a signed media URL lives — the link is the access. */
+  signed_url_ttl_seconds: number;
+  reminder_grace_minutes: number;
+
   updated_at: string;
+};
+
+/** The subset a signed-in client may read: the rules, not the keys. */
+export type PublicSettings = {
+  lunch_min_seconds: number;
+  lunch_max_seconds: number;
+  lunch_max_bytes: number;
+  max_accuracy_m: number;
+  warn_accuracy_m: number;
+  max_fix_age_s: number;
 };
 
 export type AuditLog = {

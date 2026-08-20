@@ -3,20 +3,23 @@ import { redirect } from "next/navigation";
 
 import { CaptureFlow } from "@/components/attendance/capture-flow";
 import { requireProfile } from "@/lib/auth/session";
-import { getChallengePhrase } from "@/lib/attendance/challenge";
+import { getChallenge } from "@/lib/attendance/challenge";
 import { getTodayAttendance } from "@/lib/attendance/queries";
+import { getPrimaryPartnerName } from "@/lib/pairing/queries";
 
 export const metadata: Metadata = { title: "Check in" };
 
 export default async function CheckInPage() {
   const profile = await requireProfile();
-  const { attendance, today } = await getTodayAttendance(profile.timezone);
+  const { attendance } = await getTodayAttendance(profile.timezone);
 
   // The database enforces this too; catching it here just saves the user
   // from opening their camera for a submission that cannot succeed.
   if (attendance && attendance.status !== "not_started") {
     redirect("/app/dashboard");
   }
+
+  const partnerName = await getPrimaryPartnerName();
 
   return (
     <div className="space-y-5">
@@ -30,7 +33,7 @@ export default async function CheckInPage() {
       <CaptureFlow
         userId={profile.id}
         eventType="check_in"
-        challenge={getChallengePhrase(profile.id, today)}
+        challenge={getChallenge("check_in", partnerName)}
       />
     </div>
   );
