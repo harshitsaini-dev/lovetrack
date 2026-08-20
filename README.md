@@ -108,6 +108,38 @@ Ye teeno zaroori hain. Ek baar RLS scripts 21/21 green the jabki partner page ha
 `supabase/migrations/*.sql` ko order me Supabase SQL Editor me run karein
 (Dashboard → SQL Editor → New query → paste → Run).
 
+### Pehla admin kaise banayein
+
+App ke andar se admin banne ka **koi option nahi hai — jaan-boojhkar.** "Koi bhi khud ko admin bana le" bootstrap nahi hota, hole hota hai. Pehla admin bahar se, kisi trusted jagah se aana chahiye.
+
+1. **Normal account banao** — `/register` par sign up karo, phir email me aaye confirm link par click karo. Admin bhi pehle ek aam user hi hota hai.
+
+2. **Role promote karo**, apni machine se:
+
+   ```bash
+   node scripts/set-role.mjs you@example.com admin
+   ```
+
+   Script `.env.local` se service-role key uthata hai, isliye jis Supabase project ki keys wahan hain, wahi update hota hai — production keys ke saath ye **live database** badlega. Output:
+
+   ```
+   you@example.com -> admin
+   ```
+
+   Laptop paas na ho to Supabase Dashboard → SQL Editor:
+
+   ```sql
+   update profiles set role = 'admin' where email = 'you@example.com';
+   ```
+
+3. **`/admin` kholo.** Dobara login karne ki zarurat nahi — `requireAdmin()` har request par database se role padhta hai, session token se nahi. Bas page refresh kar do. `/forbidden` dikhe to matlab role update hua hi nahi.
+
+Wapas normal user banane ke liye: `node scripts/set-role.mjs you@example.com user`
+
+**Dhyan rakhna:** admin doosre logon ka evidence media dekh sakta hai. Isiliye har admin action `audit_logs` me jaata hai — apna bhi. Role dena ek asli decision hai, convenience nahi.
+
+Admin panel me: `/admin` (stats), `/admin/users`, `/admin/review` (flagged events + media), `/admin/settings` (accuracy limits, risk weights, nonce lifetime, retention — sab bina redeploy ke), `/admin/storage` (purana data delete karke free tier maintain karna), `/admin/audit`, `/admin/emails`.
+
 ## Security model — short version
 
 - **Server-authoritative time.** Attendance timestamp hamesha database ka `now()` hai, device ka clock nahi.
