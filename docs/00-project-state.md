@@ -2,7 +2,7 @@
 
 Last updated: 2026-08-20
 
-## Overall status: **ALL 12 PHASES CODE-COMPLETE â€” live deploy baaki hai**
+## Overall status: **ALL 12 PHASES COMPLETE â€” LIVE at https://lovetrack.harshitsaini.in**
 
 ### Where things stand (2026-08-20)
 
@@ -19,7 +19,7 @@ Last updated: 2026-08-20
 | 9 Â· Hardening â€” CSP nonce, rate limiting, headers | âœ… |
 | 10 Â· Polish â€” skeletons, status pages, motion, mobile | âœ… |
 | 11 Â· Tests â€” unit + E2E + database verify | âœ… |
-| 12 Â· Deployment config + README | âœ… code, deploy pending |
+| 12 Â· Deployment â€” Vercel + domain + cron | âœ… live |
 
 **Migrations applied: 0001-0020.**
 

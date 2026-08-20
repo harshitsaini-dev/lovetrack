@@ -251,15 +251,40 @@ Resend API keys
 - [x] Playwright â€” 97 E2E
 - [x] README finalized
 - [x] Reminders cron workflow committed
-- [ ] `npx vercel --prod` â€” pehla deploy
-- [ ] Vercel me saare env vars set (committed nahi)
-- [ ] `lovetrack.harshitsaini.in` Vercel me add, Cloudflare CNAME **grey cloud**
-- [ ] Supabase Auth URL configuration updated
-- [ ] GitHub Secrets: `APP_URL`, `CRON_SECRET`
-- [ ] Smoke test live URL par: register â†’ pair â†’ check-in â†’ lunch â†’ check-out â†’ leave â†’ admin view
+- [x] Vercel deploy live â€” `https://lovetrack.harshitsaini.in`
+- [x] Env vars set (committed nahi)
+- [x] Cloudflare CNAME â†’ `vercel-dns-017.com`, **grey cloud** (Vercel anycast IPs resolve ho rahe hain, Cloudflare ke nahi â€” yaani DNS-only sahi lagaya gaya)
+- [x] Supabase Auth URL configuration updated
+- [x] GitHub Secrets: `APP_URL`, `CRON_SECRET`
+- [x] Resend MX + SPF sahi naam par move ho gaye
+- [ ] Manual smoke test asli phone par: register â†’ pair â†’ check-in â†’ lunch â†’ check-out â†’ leave â†’ admin view
 
-## â° Yaad dilana baaki hai (project ke end me)
+## Live verification (20 Aug 2026)
 
-1. **Resend MX + SPF records galat naam par hain** â€” `send.send.harshitsaini.in` ban gaye the. Bounce/complaint feedback tab tak kaam nahi karega jab tak Cloudflare me Name field `send` karke theek nahi hote. (DKIM sahi hai, isliye sending chal rahi hai â€” isiliye ye dikkat chupi hui hai.)
-2. **DMARC tightening** â€” `p=none` â†’ `p=quarantine` (~10 Sep 2026) â†’ `p=reject` (~10 Oct 2026), aur `sp=reject` wala variant use karo taaki root domain par asar na pade. Upar "DMARC ka roadmap" section me detail hai.
-3. **R2 migration** â€” media abhi Supabase Storage me hai. Video quota badhne par shift karna.
+| Check | Result |
+|---|---|
+| `/login` | 200, `server: Vercel` |
+| CSP nonce HTML aur header dono me match | âœ… `proxy.ts` Vercel par chal raha hai |
+| HSTS / Permissions-Policy / Referrer-Policy / nosniff / frame-deny | âœ… sab present |
+| `/app/dashboard`, `/admin` bina login | 307 â†’ `/login` |
+| `/api/cron/reminders` bina secret | 401 |
+| Unknown URL | 404 (custom page) |
+| `robots.txt` | production URL, saare private routes disallowed, AI crawlers blocked |
+| `sitemap.xml` | koi private route nahi |
+| GitHub Actions cron | `{"ok":true,"considered":0,"sent":0,"skipped":0,"failed":0}` â€” authenticated, DB query chali, abhi koi due nahi |
+
+### Resend DNS â€” fixed
+
+| Record | Name | Status |
+|---|---|---|
+| DKIM | `resend._domainkey.send.harshitsaini.in` | âœ… |
+| SPF (TXT) | `send.harshitsaini.in` | âœ… `send.send.` se move hua |
+| MX | `send.harshitsaini.in` | âœ… `send.send.` se move hua |
+| DMARC | `_dmarc.harshitsaini.in` | âœ… `p=none` |
+
+Ab bounce aur spam-complaint feedback kaam karega. Pehle DKIM sahi hone ki wajah se domain verified dikh raha tha aur mail bhi ja rahi thi, isliye ye dikkat chupi hui thi.
+
+## â° Ab sirf ye yaad rakhna hai
+
+1. **DMARC tightening** â€” `p=none` â†’ `p=quarantine` (~10 Sep 2026) â†’ `p=reject` (~10 Oct 2026), aur `sp=reject` wala variant use karo taaki root domain par asar na pade. Upar "DMARC ka roadmap" section me detail hai. Date asli shart nahi hai â€” pehle DMARC reports me dekh lo ki saari legitimate mail pass ho rahi hai.
+2. **R2 migration** â€” media abhi Supabase Storage me hai. Video quota badhne par shift karna.
