@@ -26,10 +26,14 @@
 
 -- ---------- 1. the clip may be recorded while lunch is running ----------
 
+-- Signature kept byte-identical to 0009 on purpose. Postgres matches
+-- functions by argument types, so any drift here would create a second
+-- overload rather than replacing the original — and the old body would go
+-- on being called with nobody the wiser.
 create or replace function public.record_lunch_proof(
   p_video_path text,
-  p_duration_s numeric default null,
-  p_size_bytes integer default null,
+  p_duration_s numeric,
+  p_size_bytes integer,
   p_challenge_phrase text default null
 )
 returns jsonb

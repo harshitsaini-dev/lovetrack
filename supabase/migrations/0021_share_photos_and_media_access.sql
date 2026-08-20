@@ -120,7 +120,13 @@ grant execute on function public.get_partner_permissions(uuid) to authenticated;
 -- existed. It leaks nothing beyond the fact a capture happened, which the
 -- event row already says.
 
-create or replace function public.get_partner_events(
+-- Dropped first, not replaced. Three columns are being added to the result
+-- and Postgres refuses to change a function's OUT parameters in place
+-- ("cannot change return type of existing function"). Nothing depends on it
+-- but the app, which is deployed after this runs.
+drop function if exists public.get_partner_events(uuid, date);
+
+create function public.get_partner_events(
   p_partner_id uuid,
   p_from_date date default null
 )
