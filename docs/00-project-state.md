@@ -2,7 +2,46 @@
 
 Last updated: 2026-08-20
 
-## Overall status: **PHASE 2 COMPLETE — Phase 3 (Pairing + permissions) next**
+## Overall status: **PHASES 1-5 COMPLETE — Phase 6 (Leave + reminders + Resend) next**
+
+### Where things stand (2026-08-20)
+
+| Phase | Status |
+|---|---|
+| 1 · Repo, framework, design | ✅ |
+| 2 · Auth, profiles, RLS | ✅ |
+| 3 · Pairing + permissions | ✅ |
+| 4 · Check-in/out, camera, location, risk engine | ✅ |
+| 5 · Lunch proof video | ✅ |
+| 6 · Leave + reminders + Resend | next |
+| 7 · Partner activity view | pending |
+| 8 · Admin (storage/retention shipped early) | partial |
+| 9-12 | pending |
+
+**Migrations applied: 0001-0011.**
+
+**Verification scripts** (`npm run verify:*`) — adversarial API-level checks:
+
+| Script | Checks |
+|---|---|
+| `verify-pairing-rls.mjs` | 24 |
+| `verify-attendance.mjs` | 24 |
+| `verify-lunch.mjs` | 11 |
+| `verify-retention.mjs` | 20 |
+
+**E2E: 82 tests** across auth, pairing, attendance, lunch, profile, status pages and SEO.
+
+### Shipped ahead of its phase
+
+- **Admin storage/retention** (`/admin/storage`) — media ages out while the record survives; preview before deleting; every run audit-logged
+- **`audit_logs` table** — brought forward from Phase 8 because retention destroys other people's evidence and had to be answerable
+- **Status pages** — 404, 500, 403, offline, and a global fallback
+- **Skeleton loading** on every route
+- **SEO** — robots.txt and sitemap.xml, with everything private disallowed and `noindex` on signed-in pages
+
+---
+
+## Phase 2 detail
 
 ### Phase 2 me kya bana (2026-08-20)
 

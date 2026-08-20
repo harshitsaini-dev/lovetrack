@@ -77,7 +77,9 @@ export async function requireAdmin(): Promise<Profile> {
   const profile = await requireProfile();
 
   if (profile.role !== "admin") {
-    redirect("/app/dashboard");
+    // A dedicated page rather than a silent bounce: being sent back to the
+    // dashboard with no explanation reads like a bug, not a boundary.
+    redirect("/forbidden");
   }
 
   return profile;

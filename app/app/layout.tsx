@@ -1,6 +1,18 @@
+import type { Metadata } from "next";
+
 import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { requireProfile } from "@/lib/auth/session";
+
+/**
+ * robots.txt asks crawlers not to fetch these pages; this tells them not to
+ * index them even if they arrive by some other route — a shared link, say.
+ * Belt and braces, because what is behind here is someone's attendance,
+ * location history and photographs.
+ */
+export const metadata: Metadata = {
+  robots: { index: false, follow: false, nocache: true },
+};
 
 export default async function AppLayout({
   children,

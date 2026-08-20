@@ -90,5 +90,18 @@ export type SystemSettings = {
   points_accuracy_low: number;
   points_zero_drift: number;
   points_implausible_speed: number;
+  /** Age at which photos and clips are purged; 0 disables. */
+  media_retention_days: number;
+  /** Age at which whole attendance rows go; 0 keeps them forever. */
+  record_retention_days: number;
   updated_at: string;
+};
+
+export type AuditLog = {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  target_user_id: string | null;
+  detail: Record<string, unknown> | null;
+  created_at: string;
 };

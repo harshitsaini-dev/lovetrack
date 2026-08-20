@@ -11,6 +11,7 @@ import type {
   Attendance,
   AttendanceEvent,
   AttendanceEventType,
+  AuditLog,
   LunchProof,
   SystemSettings,
 } from "@/types/attendance";
@@ -136,6 +137,12 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      audit_logs: {
+        Row: AuditLog;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       lunch_proofs: {
         Row: LunchProof;
         Insert: never;
@@ -228,6 +235,18 @@ export type Database = {
       issue_attendance_nonce: {
         Args: { p_event_type: AttendanceEventType };
         Returns: string;
+      };
+      preview_retention_cleanup: {
+        Args: Record<string, never>;
+        Returns: unknown;
+      };
+      list_expired_media: {
+        Args: Record<string, never>;
+        Returns: { bucket: string; path: string }[];
+      };
+      apply_retention_cleanup: {
+        Args: Record<string, never>;
+        Returns: unknown;
       };
       record_lunch_proof: {
         Args: {
