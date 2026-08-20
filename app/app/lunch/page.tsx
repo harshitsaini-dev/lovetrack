@@ -43,7 +43,7 @@ export default async function LunchPage() {
     return (
       <div className="space-y-5">
         <header className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Lunch start</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Lunch in</h1>
           <p className="text-sm text-muted-foreground">
             Sirf abhi ki location — photo nahi.
           </p>
@@ -72,7 +72,7 @@ export default async function LunchPage() {
             </h1>
             <p className="text-sm text-muted-foreground">
               5-20 second ki video — khana khate hue banayein. Iske baad hi
-              lunch end kar payenge.
+              lunch out kar payenge.
             </p>
           </header>
 
@@ -88,7 +88,7 @@ export default async function LunchPage() {
     return (
       <div className="space-y-5">
         <header className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Lunch end</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Lunch out</h1>
           <p className="text-sm text-muted-foreground">
             Verification ho chuki hai. Sirf abhi ki location chahiye.
           </p>

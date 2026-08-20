@@ -131,14 +131,14 @@ test("the day walks check-in, lunch start, the clip, then lunch end", async ({
 
   // The dashboard offers lunch as a secondary action, not a funnel.
   await page.goto("/app/dashboard");
-  await expect(page.getByRole("link", { name: /lunch start/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /lunch in/i })).toBeVisible();
 
   // --- lunch start, location only
   await page.goto("/app/lunch");
-  await expect(page.getByRole("heading", { name: "Lunch start" })).toBeVisible();
-  await confirmLocationOnly(page, /verify & lunch start/i);
+  await expect(page.getByRole("heading", { name: "Lunch in" })).toBeVisible();
+  await confirmLocationOnly(page, /verify & lunch in/i);
   await expect(
-    page.getByRole("heading", { name: /lunch start (ho gaya|record ho gaya)/i }),
+    page.getByRole("heading", { name: /lunch in (ho gaya|record ho gaya)/i }),
   ).toBeVisible({ timeout: 25_000 });
 
   // --- the clip comes next, not last
@@ -148,10 +148,10 @@ test("the day walks check-in, lunch start, the clip, then lunch end", async ({
 
   // --- and only now can lunch end
   await page.goto("/app/lunch");
-  await expect(page.getByRole("heading", { name: "Lunch end" })).toBeVisible();
-  await confirmLocationOnly(page, /verify & lunch end/i);
+  await expect(page.getByRole("heading", { name: "Lunch out" })).toBeVisible();
+  await confirmLocationOnly(page, /verify & lunch out/i);
   await expect(
-    page.getByRole("heading", { name: /lunch end (ho gaya|record ho gaya)/i }),
+    page.getByRole("heading", { name: /lunch out (ho gaya|record ho gaya)/i }),
   ).toBeVisible({ timeout: 25_000 });
 });
 

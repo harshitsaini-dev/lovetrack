@@ -51,23 +51,32 @@ export function TodayCard({
   const status = attendance?.status ?? "not_started";
   const flagged = events.filter((e) => e.status !== "passed");
 
-  // The primary action is whatever the day needs next. Lunch is optional,
-  // so once someone is checked in they get both choices rather than being
-  // funnelled through a meal they may have skipped.
+  /*
+   * The primary action is whatever the day needs next.
+   *
+   * The three lunch steps are named separately -- "Lunch in", "Lunch verify",
+   * "Lunch out" -- rather than sharing one "Lunch" label. They all lead to
+   * /app/lunch, which routes by state, but a button that says the same thing
+   * three times gives no way to tell how far through the meal you are, and
+   * "Lunch" when the next step is recording a video is simply misleading.
+   *
+   * Lunch is optional, so once someone is checked in they get both choices
+   * rather than being funnelled through a meal they may have skipped.
+   */
   const primary =
     status === "not_started"
       ? { href: "/app/check-in", label: "Check in", icon: Camera }
-      : status === "lunch_active"
-        ? { href: "/app/lunch", label: "Lunch end", icon: Utensils }
-        : status === "lunch_verified" && !lunchProofDone
-          ? { href: "/app/lunch", label: "Lunch proof record karein", icon: Video }
+      : status === "lunch_active" && !lunchProofDone
+        ? { href: "/app/lunch", label: "Lunch verify karein", icon: Video }
+        : status === "lunch_active"
+          ? { href: "/app/lunch", label: "Lunch out", icon: Utensils }
           : status === "checked_in" || status === "lunch_verified"
             ? { href: "/app/check-out", label: "Check out", icon: LogOut }
             : null;
 
   const secondary =
     status === "checked_in"
-      ? { href: "/app/lunch", label: "Lunch start", icon: Utensils }
+      ? { href: "/app/lunch", label: "Lunch in", icon: Utensils }
       : null;
 
   return (

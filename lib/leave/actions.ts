@@ -6,6 +6,7 @@ import { z } from "zod";
 import type { AuthFormState } from "@/lib/auth/actions";
 import { requireProfile } from "@/lib/auth/session";
 import { sendEmail } from "@/lib/email/send";
+import { notifyPartners } from "@/lib/notify/partners";
 import { leaveRecordedEmail } from "@/lib/email/templates";
 import { formatCalendarDate, getTodayInTimezone } from "@/lib/format/datetime";
 import { LEAVE_TYPES } from "@/lib/leave/constants";
@@ -92,6 +93,17 @@ export async function applyForLeave(
       ...content,
     });
   }
+
+  // The point of recording leave is that somebody else knows not to expect
+  // you. Telling only the person who typed it in was the confirmation, not
+  // the message.
+  await notifyPartners({
+    actorId: profile.id,
+    actorName: profile.full_name,
+    kind: "leave",
+    occurredOn: parsed.data.leaveDate,
+    detail: parsed.data.reason,
+  });
 
   revalidatePath("/app/leave");
   revalidatePath("/app/dashboard");

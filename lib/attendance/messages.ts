@@ -57,7 +57,9 @@ export function describeSignal(signal: RiskSignal): string {
 
 export const EVENT_LABELS: Record<AttendanceEventType, string> = {
   check_in: "Check-in",
-  lunch_start: "Lunch start",
-  lunch_end: "Lunch end",
+  // "Lunch in" / "Lunch out" rather than start/end, so the timeline reads
+  // the same as the buttons that produced it.
+  lunch_start: "Lunch in",
+  lunch_end: "Lunch out",
   check_out: "Check-out",
 };

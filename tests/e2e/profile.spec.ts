@@ -124,17 +124,30 @@ test.describe("profile management", () => {
       "base64",
     );
 
-    await page.getByLabel(/profile photo chunein/i).setInputFiles({
-      name: "avatar.png",
-      mimeType: "image/png",
-      buffer: png,
-    });
+    const picker = page.getByLabel(/profile photo chunein/i);
+    const remove = page.getByRole("button", { name: /hatayein/i });
 
-    await expect(page.getByRole("button", { name: /hatayein/i })).toBeVisible({
-      timeout: 20_000,
-    });
+    /*
+     * Retried, because the change handler is attached by React during
+     * hydration and setInputFiles before that point fires an event with
+     * nobody listening. Playwright's auto-waiting does not cover hydration:
+     * the input is present and enabled in the server-rendered HTML, so the
+     * call succeeds and simply does nothing.
+     *
+     * Headed runs pass on the first try only because slowMo delays the call
+     * past hydration, which is exactly the kind of difference that makes a
+     * suite pass for the developer and fail in CI.
+     */
+    await expect(async () => {
+      await picker.setInputFiles({
+        name: "avatar.png",
+        mimeType: "image/png",
+        buffer: png,
+      });
+      await expect(remove).toBeVisible({ timeout: 5_000 });
+    }).toPass({ timeout: 30_000 });
 
-    await page.getByRole("button", { name: /hatayein/i }).click();
+    await remove.click();
     await expect(
       page.getByRole("button", { name: /photo chunein/i }),
     ).toBeVisible({ timeout: 20_000 });

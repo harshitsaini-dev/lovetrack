@@ -303,8 +303,11 @@ try {
     check("a paired partner may set them", set.body?.ok === true,
       JSON.stringify(set.body));
 
-    const row = JSON.parse(
-      (await get(admin, `profiles?select=check_in_reminder_time,check_out_reminder_time,reminder_set_by&id=eq.${idB}`)).body,
+    const row = (
+      await get(
+        admin,
+        `profiles?select=check_in_reminder_time,check_out_reminder_time,reminder_set_by&id=eq.${idB}`,
+      )
     )[0];
 
     check("the times actually changed",
@@ -324,8 +327,8 @@ try {
     check("the owner may set their own", own.body?.ok === true,
       JSON.stringify(own.body));
 
-    const afterOwn = JSON.parse(
-      (await get(admin, `profiles?select=reminder_set_by&id=eq.${idB}`)).body,
+    const afterOwn = (
+      await get(admin, `profiles?select=reminder_set_by&id=eq.${idB}`)
     )[0];
     check("and doing so clears the partner attribution",
       afterOwn?.reminder_set_by === null, JSON.stringify(afterOwn));
@@ -339,8 +342,8 @@ try {
       stranger.body?.ok === false && stranger.body?.error === "not_paired",
       JSON.stringify(stranger.body));
 
-    const unchanged = JSON.parse(
-      (await get(admin, `profiles?select=check_in_reminder_time&id=eq.${idB}`)).body,
+    const unchanged = (
+      await get(admin, `profiles?select=check_in_reminder_time&id=eq.${idB}`)
     )[0];
     check("and nothing moved",
       unchanged?.check_in_reminder_time?.startsWith("10:00"),

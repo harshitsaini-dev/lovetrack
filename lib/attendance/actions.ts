@@ -6,6 +6,8 @@ import { z } from "zod";
 
 import { reverseGeocode } from "@/lib/location/geocode";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { getTodayInTimezone } from "@/lib/format/datetime";
+import { notifyPartners } from "@/lib/notify/partners";
 import { createClient } from "@/lib/supabase/server";
 import type {
   AttendanceEventType,
@@ -156,6 +158,38 @@ export async function submitAttendanceEvent(
     return { ok: false, error: "verification_failed" };
   }
 
+  const outcome = data as RecordEventResult;
+
+  // Only once the day actually moved. A rejected submission is recorded as
+  // evidence but changed nothing, so announcing it would be telling someone
+  // about an event that did not happen.
+  if (outcome.ok) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, timezone")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      // Awaited rather than fired and forgotten: a serverless function that
+      // returns can be frozen mid-request, and a background send would be
+      // lost often enough to look like flaky delivery. notifyPartners
+      // swallows its own failures, so this cannot fail the check-in.
+      await notifyPartners({
+        actorId: user.id,
+        actorName: profile?.full_name ?? null,
+        kind: parsed.data.eventType,
+        // Their local day, so one event yields one email even when the two
+        // people are in different timezones.
+        occurredOn: getTodayInTimezone(profile?.timezone ?? "Asia/Kolkata"),
+      });
+    }
+  }
+
   // Deliberately no revalidatePath here. Revalidating re-renders the route
   // the action was called from — the capture page — whose guard now sees the
   // day has moved on and redirects to the dashboard, destroying the result
@@ -164,5 +198,5 @@ export async function submitAttendanceEvent(
   // Nothing is lost: every attendance page is dynamic (it reads cookies), so
   // there is no cached render to invalidate. Navigating to the dashboard
   // fetches the new state anyway.
-  return data as RecordEventResult;
+  return outcome;
 }

@@ -44,7 +44,7 @@ export function getChallenge(
   // them covers that stretch — so there is no camera to speak into and the
   // instruction is about the location reading instead.
   if (eventType === "lunch_start" || eventType === "lunch_end") {
-    const label = eventType === "lunch_start" ? "Lunch start" : "Lunch end";
+    const label = eventType === "lunch_start" ? "Lunch in" : "Lunch out";
     return {
       overlay: label,
       instruction: `${label} ke liye sirf abhi ki location chahiye — photo nahi.`,

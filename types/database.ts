@@ -359,6 +359,14 @@ export type Database = {
         Args: { p_attendance_id: string; p_reason: string };
         Returns: unknown;
       };
+      partners_to_notify: {
+        Args: { p_actor_id: string; p_permission: string; p_kind: string };
+        Returns: {
+          partner_id: string;
+          email: string;
+          full_name: string | null;
+        }[];
+      };
       set_reminder_times: {
         Args: {
           p_user_id: string;

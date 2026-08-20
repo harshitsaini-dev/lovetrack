@@ -214,3 +214,61 @@ export function leaveRecordedEmail(
     text: `${leaveDate} ki leave record ho gayi.\n\nUs din koi reminder nahi aayega. Galti se add hui ho to app se hata sakte hain: ${appUrl}/app/leave`,
   };
 }
+
+export type PartnerEventKind =
+  | "check_in"
+  | "lunch_start"
+  | "lunch_end"
+  | "check_out"
+  | "leave";
+
+const KIND_LINES: Record<PartnerEventKind, { heading: string; line: string }> = {
+  check_in: { heading: "ne check-in kar liya", line: "unka din shuru ho gaya hai" },
+  lunch_start: { heading: "lunch par gaye", line: "unka lunch break shuru hua" },
+  lunch_end: { heading: "lunch se wapas aa gaye", line: "unka lunch break khatam" },
+  check_out: { heading: "ne check-out kar liya", line: "unka din complete ho gaya" },
+  leave: { heading: "aaj chhutti par hain", line: "unhone leave record ki hai" },
+};
+
+/**
+ * "Your friend just checked in."
+ *
+ * Deliberately carries no location, no photo and no map link — only that
+ * something happened. Quoting a place into an inbox takes it out of the
+ * app's permission model and puts it somewhere neither person controls:
+ * inbox search, a phone's lock screen, whatever forwards it next. Anyone
+ * entitled to the place can open the app and see it there, where the
+ * sharing switches still apply.
+ *
+ * No time either. It would have to be rendered in someone's timezone, and
+ * the two people are not necessarily in the same one.
+ */
+export function partnerActivityEmail({
+  actorName,
+  recipientName,
+  kind,
+  detail,
+  appUrl,
+}: {
+  actorName: string | null;
+  recipientName: string | null;
+  kind: PartnerEventKind;
+  detail?: string | null;
+  appUrl: string;
+}): EmailContent {
+  const who = actorName?.split(" ")[0] ?? "Aapke partner";
+  const you = recipientName?.split(" ")[0];
+  const { heading, line } = KIND_LINES[kind];
+
+  return {
+    subject: `${who} ${heading}`,
+    html: wrap({
+      heading: `${who} ${heading}`,
+      body: `<p style="margin:0 0 12px;">${you ? `${you}, ` : ""}${who} — ${line}.</p>
+             ${detail ? `<p style="margin:0 0 12px;">${detail}</p>` : ""}
+             <p style="margin:0;">Poora record app me hai.</p>`,
+      cta: { href: `${appUrl}/app/partner`, label: "Activity dekhein" },
+    }),
+    text: `${who} ${heading}.${detail ? `\n\n${detail}` : ""}\n\nPoora record: ${appUrl}/app/partner`,
+  };
+}
