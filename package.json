@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:mobile": "playwright test --project=mobile",
     "test:e2e:headless": "cross-env HEADED=0 playwright test",
@@ -15,7 +17,15 @@
     "test:e2e:report": "playwright show-report",
     "test:reset": "node scripts/reset-test-data.mjs",
     "verify:pairing": "node scripts/verify-pairing-rls.mjs",
-    "verify:attendance": "node scripts/verify-attendance.mjs"
+    "verify:attendance": "node scripts/verify-attendance.mjs",
+    "verify:lunch": "node scripts/verify-lunch.mjs",
+    "verify:leave": "node scripts/verify-leave.mjs",
+    "verify:partner": "node scripts/verify-partner-activity.mjs",
+    "verify:retention": "node scripts/verify-retention.mjs",
+    "verify:admin": "node scripts/verify-admin.mjs",
+    "verify:hardening": "node scripts/verify-hardening.mjs",
+    "verify:all": "npm run verify:pairing && npm run verify:attendance && npm run verify:lunch && npm run verify:leave && npm run verify:partner && npm run verify:retention && npm run verify:admin && npm run verify:hardening",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -53,6 +63,13 @@
     "eslint-config-next": "16.3.1",
     "sharp": "^0.35.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.11"
+  },
+  "allowScripts": {
+    "esbuild@0.25.4": true,
+    "esbuild@0.28.1": true,
+    "workerd@1.20260815.1": true,
+    "unrs-resolver@1.12.2": true
   }
 }

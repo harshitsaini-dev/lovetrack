@@ -40,6 +40,7 @@ yarn-error.log*
 
 # cloudflare
 .wrangler/
+.open-next/
 .dev.vars
 
 # playwright

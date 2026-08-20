@@ -12,9 +12,9 @@ LoveTrack ek hidden tracking app **nahi** hai. Har user ko clearly pata hota hai
 - **Location kahin se bhi** — koi fixed geofence nahi; validation sirf ye hai ki us waqt ki location genuine aur accurate ho
 - **One-time capture** — location sirf check-in/check-out/lunch ke exact moment par li jaati hai, uske baad kabhi nahi
 - **Server-authoritative time** — device ka clock/timezone badalne se attendance timestamp nahi badalta
-- **Lunch proof video** — 5-20s `MediaRecorder` clip, private R2 bucket, short-lived signed URLs
-- **Leave workflow** — mandatory reason, optional admin approval, full audit trail
-- **Automatic reminders** — missing activity par daily email; har user apna reminder time Settings se chunta hai (Cloudflare Cron + Resend)
+- **Lunch proof video** — 5-20s `MediaRecorder` clip, private bucket, short-lived signed URLs
+- **Leave = information, not approval** — aap partner ko batate ho ki aaj chhutti hai; kisi ki permission nahi chahiye. Record hota hai, cancel ho sakta hai, audit trail rehti hai.
+- **Automatic reminders** — missing activity par daily email; har user apna reminder time Settings se chunta hai (scheduled cron + Resend)
 - **Installable** — landing page aur settings dono jagah "Install app" button, plus light/dark toggle
 - **Partner dashboard** — consent-gated attendance events, har event ki captured location map par (live tracking nahi)
 - **Admin panel** — users, attendance, leaves, suspicious events, media evidence, audit logs
@@ -28,14 +28,17 @@ LoveTrack ek hidden tracking app **nahi** hai. Har user ko clearly pata hota hai
 | Styling | Tailwind CSS v4 + shadcn/ui |
 | Animation | Framer Motion |
 | Auth + DB | Supabase (Auth, PostgreSQL, RLS) |
-| Edge/API | Cloudflare Workers + Cron |
-| Media | Cloudflare R2 (private bucket) |
+| Media | Supabase Storage (private buckets, signed URLs) |
 | Email | Resend |
 | Maps | Leaflet + OpenStreetMap |
 | Forms | React Hook Form + Zod |
 | State | Zustand |
-| Testing | Vitest + Playwright (MCP) |
-| Hosting | Cloudflare Pages |
+| Testing | Vitest (unit) + Playwright (E2E) + SQL-level verify scripts |
+| Hosting | Vercel |
+| Scheduled jobs | GitHub Actions cron → `/api/cron/reminders` |
+| DNS | Cloudflare (`lovetrack.harshitsaini.in`) |
+
+**Hosting Cloudflare Workers kyun nahi:** Next.js 16 me `middleware.ts` ka naam `proxy.ts` ho gaya aur wo **sirf Node runtime** par chalta hai — edge par force karne par Next khud mana kar deta hai. `@opennextjs/cloudflare` abhi Node middleware support nahi karta. LoveTrack ka `proxy.ts` optional nahi hai: usme Supabase session refresh, route gating, aur **per-request CSP nonce** hai. Nonce ke bina CSP me `unsafe-inline` daalna padta, jo CSP ko lagbhag decorative bana deta hai. Isliye app Vercel par hai; domain aur DNS Cloudflare par hi hain.
 
 ## Local setup
 
@@ -65,6 +68,9 @@ npm run build            # production build
 npm run start            # serve production build
 npm run lint             # ESLint
 npm run typecheck        # tsc --noEmit
+npm run test             # Vitest — pure logic (time, validation, CSP, prompts)
+npm run check            # typecheck + lint + unit tests + build, in order
+npm run verify:all       # 167 adversarial checks against the real database
 npm run test:e2e          # Playwright — opens a real browser you can watch
 npm run test:e2e:mobile   # phone viewport only
 npm run test:e2e:ui       # Playwright's interactive UI mode
@@ -85,10 +91,55 @@ node scripts/seed-e2e-user.mjs   # creates it, prints the credentials
 Put the printed `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD` into `.env.local`.
 Without them those tests skip themselves rather than fail.
 
+### Testing ka teen-parat model
+
+Har feature teen jagah verify hota hai, kyunki teeno alag tarah ke bug pakadte hain:
+
+| Parat | Kya check karti hai | Kaunsa bug pakadti hai |
+|---|---|---|
+| **Vitest** (`tests/unit/`) | Pure logic — timezone formatting, Zod schemas, CSP builder, camera prompts | Galat jawab jo database ya browser par depend nahi karta |
+| **Verify scripts** (`scripts/verify-*.mjs`) | Seedha Supabase par, adversarially — "kya partner doosre ka data padh sakta hai?" | RLS holes, SECURITY DEFINER leaks, rate-limit bypass |
+| **Playwright** (`tests/e2e/`) | Asli browser, phone viewport, fake camera | UI jo sahi data ko silently drop kar de |
+
+Ye teeno zaroori hain. Ek baar RLS scripts 21/21 green the jabki partner page har pair chupchaap drop kar raha tha — sirf E2E ne pakda. Ulta bhi hua hai.
+
 ### Database migrations
 
 `supabase/migrations/*.sql` ko order me Supabase SQL Editor me run karein
 (Dashboard → SQL Editor → New query → paste → Run).
+
+## Security model — short version
+
+- **Server-authoritative time.** Attendance timestamp hamesha database ka `now()` hai, device ka clock nahi.
+- **Nonce + replay protection.** Har capture ke liye ek short-lived nonce, ek hi baar use hota hai.
+- **RLS everywhere.** Har table par row level security; partner ko coordinates ka **direct read access nahi** hai — sab kuch `SECURITY DEFINER` functions se jaata hai jo permission check karte hain.
+- **CSP with per-request nonce + `strict-dynamic`.** `unsafe-inline` kahin nahi.
+- **Permissions-Policy.** Sirf camera, microphone, geolocation — baaki har sensor band.
+- **Rate limiting** Postgres me, hashed identifiers ke saath (IP + identifier dono).
+- **Risk scoring** configurable signals se; flagged events admin review me jaate hain, user ko block nahi karte.
+- **Audit log** har admin action aur har settings change par.
+
+Detail: [docs/03-security-anti-fraud.md](./docs/03-security-anti-fraud.md)
+
+## Deployment
+
+App **Vercel** par deploy hoti hai, domain aur DNS **Cloudflare** par rehte hain.
+
+```bash
+npx vercel            # pehli baar — project link karo
+npx vercel --prod     # production deploy
+```
+
+Vercel dashboard → Settings → Environment Variables me `.env.example` ki saari keys daalni hain (`E2E_*` chhodkar), aur `NEXT_PUBLIC_APP_URL=https://lovetrack.harshitsaini.in`.
+
+Uske baad:
+
+1. Vercel → Domains → `lovetrack.harshitsaini.in` add karo
+2. Cloudflare DNS me CNAME add karo, **grey cloud (DNS only)** — orange proxy Vercel ke certificate issuance ko todta hai
+3. Supabase → Authentication → URL Configuration me Site URL aur `https://lovetrack.harshitsaini.in/**` redirect add karo
+4. GitHub repo → Settings → Secrets me `APP_URL` aur `CRON_SECRET` daalo, taaki reminders wala workflow chal sake
+
+Poora guide, DMARC roadmap ke saath: [docs/07-deployment.md](./docs/07-deployment.md)
 
 ## Environment variables
 
@@ -116,6 +167,8 @@ Setup guides: [docs/07-deployment.md](./docs/07-deployment.md)
 - **Koi live/continuous location tracking nahi hai — by design.** Location sirf us ek moment par capture hoti hai jab aap khud check-in / check-out / lunch mark karte hain. Uske baad app aapki location nahi dekhta. Partner ko "aap abhi kahan ho" nahi dikhta — sirf ye dikhta hai ki aapne kab aur kahan se attendance mark ki.
 - EXIF metadata ko kabhi proof nahi maana jata.
 - IP/timezone mismatch checks sirf heuristics hain — VPN se false positive aa sakta hai.
+- **Device binding abhi advisory hai**, cryptographic nahi. WebCrypto-based binding jaan-boojhkar defer kiya gaya — aadha-adhoora implement karke "device verified" dikhana usse zyada khatarnak hai ki na dikhaya jaaye.
+- Media abhi **Supabase Storage** me hai, R2 me nahi. Media layer me clean seam hai taaki baad me shift ho sake.
 
 ## Privacy notes
 

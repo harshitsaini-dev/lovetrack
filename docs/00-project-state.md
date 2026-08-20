@@ -2,7 +2,7 @@
 
 Last updated: 2026-08-20
 
-## Overall status: **PHASES 1-5 COMPLETE â€” Phase 6 (Leave + reminders + Resend) next**
+## Overall status: **ALL 12 PHASES CODE-COMPLETE â€” live deploy baaki hai**
 
 ### Where things stand (2026-08-20)
 
@@ -13,23 +13,41 @@ Last updated: 2026-08-20
 | 3 Â· Pairing + permissions | âœ… |
 | 4 Â· Check-in/out, camera, location, risk engine | âœ… |
 | 5 Â· Lunch proof video | âœ… |
-| 6 Â· Leave + reminders + Resend | next |
-| 7 Â· Partner activity view | pending |
-| 8 Â· Admin (storage/retention shipped early) | partial |
-| 9-12 | pending |
+| 6 Â· Leave (= information) + reminders + Resend | âœ… |
+| 7 Â· Partner activity view | âœ… |
+| 8 Â· Admin panel + settings + retention | âœ… |
+| 9 Â· Hardening â€” CSP nonce, rate limiting, headers | âœ… |
+| 10 Â· Polish â€” skeletons, status pages, motion, mobile | âœ… |
+| 11 Â· Tests â€” unit + E2E + database verify | âœ… |
+| 12 Â· Deployment config + README | âœ… code, deploy pending |
 
-**Migrations applied: 0001-0011.**
+**Migrations applied: 0001-0020.**
 
-**Verification scripts** (`npm run verify:*`) â€” adversarial API-level checks:
+### Green as of last run
+
+| Layer | Result |
+|---|---|
+| `npm run check` (typecheck + lint + unit + build) | âœ… exit 0 |
+| Vitest unit tests | **49/49** |
+| `npm run verify:all` â€” database-level, adversarial | **167/167** |
+| Playwright E2E (mobile-first, headed) | **97/97** |
+
+**Verification scripts** (`npm run verify:*`):
 
 | Script | Checks |
 |---|---|
 | `verify-pairing-rls.mjs` | 24 |
-| `verify-attendance.mjs` | 24 |
+| `verify-attendance.mjs` | 25 |
 | `verify-lunch.mjs` | 11 |
+| `verify-leave.mjs` | 20 |
+| `verify-partner-activity.mjs` | 22 |
 | `verify-retention.mjs` | 20 |
+| `verify-admin.mjs` | 25 |
+| `verify-hardening.mjs` | 20 |
 
-**E2E: 82 tests** across auth, pairing, attendance, lunch, profile, status pages and SEO.
+### Phase 12 me ek plan badla
+
+Cloudflare Workers par deploy karna **possible nahi nikla**: Next 16 ka `proxy.ts` sirf Node runtime par chalta hai, aur `@opennextjs/cloudflare` Node middleware support nahi karta. `proxy.ts` hatana option nahi tha (per-request CSP nonce usi me hai). **App ab Vercel par jaayegi, domain/DNS Cloudflare par hi rahenge.** Poori wajah [07-deployment.md](./07-deployment.md) me likhi hai.
 
 ### Shipped ahead of its phase
 

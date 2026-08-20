@@ -1,0 +1,40 @@
+name: Daily reminders
+
+# Each user picks their own reminder time in their own timezone, so there is
+# no single hour to fire at — the endpoint asks the database who is due on
+# each pass. That needs a scheduler that runs often, and Vercel's Hobby plan
+# caps cron jobs at once per day, so the schedule lives here instead.
+#
+# The endpoint is idempotent (`users_due_for_reminder()` excludes anyone who
+# already got today's mail, backed by a unique index), so an extra run or a
+# late run costs nothing. GitHub delays scheduled workflows under load; for
+# an approximate reminder that is acceptable.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: # so it can be triggered by hand while debugging
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reminder pass
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "CRON_SECRET secret is not set" >&2
+            exit 1
+          fi
+
+          # --fail-with-body so a 401 or 500 fails the job loudly instead of
+          # succeeding quietly — a reminder system that stops working without
+          # telling anyone is worse than not having one.
+          curl --fail-with-body --silent --show-error \
+            --max-time 60 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/reminders"

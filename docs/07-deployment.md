@@ -30,6 +30,57 @@ Resend â†’ emails
 
 Iska matlab: **nameservers already Cloudflare par hain, isliye subdomain add karna aasan hai.** BigRock me kuch nahi chhedna â€” sab Cloudflare dashboard se hoga.
 
+### ⛔ Cloudflare Workers ka rasta band nikla (verified 20 Aug 2026)
+
+Neeche wala plan **try kiya gaya aur fail hua**. Record ke liye rakha hai taaki dobara wahi koshish na ho.
+
+`@opennextjs/cloudflare@1.20.2` (latest) build par:
+
+```
+ERROR Node.js middleware is not currently supported. Consider switching to Edge Middleware.
+```
+
+Edge par switch karne ki koshish ki, toh Next.js 16 ne mana kiya:
+
+```
+Error: Route segment config is not allowed in Proxy file at "./proxy.ts".
+Proxy always runs on Node.js runtime.
+```
+
+Yaani **dono ek doosre ko block karte hain**. Ye config galti nahi thi — Next 16 ne `middleware` → `proxy` rename ke saath usse Node-only bana diya, aur adapter abhi Node middleware nahi chala sakta.
+
+`proxy.ts` hata dena koi option nahi tha. Usme teen cheezein hain:
+
+1. Supabase session cookie refresh
+2. Protected route gating
+3. **Per-request CSP nonce**
+
+Teesri sabse important hai. Nonce ke bina CSP me `unsafe-inline` daalna padta, aur `unsafe-inline` wali CSP attacker ko lagbhag kuch nahi rokti — protection dikhti hai, hoti nahi.
+
+**Faisla: app Vercel par, domain/DNS Cloudflare par.** Vercel Next 16 ka native host hai, Hobby tier ₹0 hai, aur portfolio Cloudflare Workers par jahan hai wahin रहेगा — usse kuch nahi chhua.
+
+### Vercel deployment steps
+
+```bash
+npx vercel          # pehli baar — project link
+npx vercel --prod   # production
+```
+
+1. **Env vars** — Vercel → Settings → Environment Variables. `.env.example` ki saari keys (`E2E_*` chhodkar). `NEXT_PUBLIC_APP_URL=https://lovetrack.harshitsaini.in`.
+2. **Domain** — Vercel → Domains → `lovetrack.harshitsaini.in` add karo.
+3. **Cloudflare DNS** — CNAME add karo, **grey cloud (DNS only)**. Orange proxy on rakhne par Vercel ka certificate issue nahi ho paata — ye sabse common galti hai.
+4. **Supabase** → Authentication → URL Configuration: Site URL set karo, redirect me `https://lovetrack.harshitsaini.in/**` add karo. Warna verification emails localhost par point karenge.
+5. **GitHub Secrets** → `APP_URL` aur `CRON_SECRET` (reminders workflow ke liye).
+
+### Reminders cron — GitHub Actions, Vercel Cron nahi
+
+Vercel ka **Hobby plan cron ko din me sirf ek baar** chalne deta hai. LoveTrack me har user apna reminder time apne timezone me chunta hai, isliye koi ek fixed hour hai hi nahi — endpoint ko baar-baar chalna padta hai aur database khud batata hai ki abhi kaun due hai.
+
+Isliye schedule [`.github/workflows/reminders.yml`](../.github/workflows/reminders.yml) me hai — har 15 minute. Endpoint idempotent hai (`users_due_for_reminder()` un logon ko chhod deta hai jinhe aaj ki mail ja chuki, aur email log par unique index backup hai), isliye extra ya late run se koi nuksaan nahi.
+
+<details>
+<summary>Purana Cloudflare plan (ab valid nahi)</summary>
+
 ### Next.js 16 ko Cloudflare par kaise deploy karein
 
 Ye ek asli technical decision hai jo dhyan maangta hai:
@@ -43,6 +94,8 @@ Ye ek asli technical decision hai jo dhyan maangta hai:
 > âœ… **Confirm ho gaya (2026-08-20):** Cloudflare DNS me `harshitsaini.in` aur `admin.harshitsaini.in` dono **Worker** records hain (`portfolio-web`, `portfolio-admin`) â€” Pages nahi. Yaani tum already Next.js ko Cloudflare Workers par chala rahe ho.
 >
 > LoveTrack bhi wahi pattern follow karega: **`@opennextjs/cloudflare` + Workers**. Koi naya deployment model seekhne ki zaroorat nahi.
+
+</details>
 
 ## Email â€” Resend (configured 2026-08-20)
 
@@ -193,8 +246,20 @@ Resend API keys
 
 ## Final deployment checklist (Phase 12)
 
-- [ ] `lint`, `typecheck`, `test`, `build` â€” sab clean
-- [ ] Cloudflare Pages connected to GitHub repo, auto-deploy on push to `main`
-- [ ] All env vars set in Cloudflare Pages dashboard (not committed)
-- [ ] Smoke test on deployed URL: register â†’ pair â†’ check-in â†’ lunch â†’ check-out â†’ leave â†’ admin view
-- [ ] README finalized with all sections above
+- [x] `typecheck`, `lint`, `test` (49 unit), `build` â€” sab clean (`npm run check`)
+- [x] `npm run verify:all` â€” 167 database-level checks
+- [x] Playwright â€” 97 E2E
+- [x] README finalized
+- [x] Reminders cron workflow committed
+- [ ] `npx vercel --prod` â€” pehla deploy
+- [ ] Vercel me saare env vars set (committed nahi)
+- [ ] `lovetrack.harshitsaini.in` Vercel me add, Cloudflare CNAME **grey cloud**
+- [ ] Supabase Auth URL configuration updated
+- [ ] GitHub Secrets: `APP_URL`, `CRON_SECRET`
+- [ ] Smoke test live URL par: register â†’ pair â†’ check-in â†’ lunch â†’ check-out â†’ leave â†’ admin view
+
+## â° Yaad dilana baaki hai (project ke end me)
+
+1. **Resend MX + SPF records galat naam par hain** â€” `send.send.harshitsaini.in` ban gaye the. Bounce/complaint feedback tab tak kaam nahi karega jab tak Cloudflare me Name field `send` karke theek nahi hote. (DKIM sahi hai, isliye sending chal rahi hai â€” isiliye ye dikkat chupi hui hai.)
+2. **DMARC tightening** â€” `p=none` â†’ `p=quarantine` (~10 Sep 2026) â†’ `p=reject` (~10 Oct 2026), aur `sp=reject` wala variant use karo taaki root domain par asar na pade. Upar "DMARC ka roadmap" section me detail hai.
+3. **R2 migration** â€” media abhi Supabase Storage me hai. Video quota badhne par shift karna.
