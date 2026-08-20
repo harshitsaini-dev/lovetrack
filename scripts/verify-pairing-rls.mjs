@@ -174,13 +174,22 @@ try {
   console.log("\n4. Permission rows are created on accept");
   const perms = JSON.parse((await get(A, `pair_permissions?select=*&pair_id=eq.${pairId}`)).body);
   check("two permission rows exist, one per user", perms.length === 2, JSON.stringify(perms));
+  // Every switch starts on. That is a deliberate product decision from
+  // 0021, not an oversight: people pair on purpose and expect to see each
+  // other's day, and starting blank made the app look broken. What has to
+  // keep holding is section 5 below — each person can still turn any of
+  // them off, and only their own.
   check(
-    "location sharing is OFF by default (opt-in)",
-    perms.every((p) => p.share_location === false),
-  );
-  check(
-    "attendance sharing is ON by default",
-    perms.every((p) => p.share_attendance === true),
+    "every sharing switch is ON by default",
+    perms.every(
+      (p) =>
+        p.share_attendance === true &&
+        p.share_location === true &&
+        p.share_lunch_proof === true &&
+        p.share_leave === true &&
+        p.share_photos === true,
+    ),
+    JSON.stringify(perms),
   );
 
   console.log("\n5. Each user controls only their own sharing");
@@ -208,8 +217,15 @@ try {
     const yes = await rpc(B, "can_view_shared", { owner_user_id: idA, permission: "location" });
     check("B may view A's location once A enabled it", yes.body.trim() === "true", yes.body);
 
+    // Turned off explicitly rather than relying on a default, now that the
+    // default is on. This is the assertion that actually matters: a switch
+    // is worthless unless flipping it off is what stops the read.
+    await patch(B, `pair_permissions?pair_id=eq.${pairId}&owner_id=eq.${idB}`, {
+      share_location: false,
+    });
+
     const no = await rpc(A, "can_view_shared", { owner_user_id: idB, permission: "location" });
-    check("A may not view B's location (B never enabled it)", no.body.trim() === "false", no.body);
+    check("A may not view B's location once B switches it off", no.body.trim() === "false", no.body);
 
     const outsider = await rpc(C, "can_view_shared", { owner_user_id: idA, permission: "location" });
     check("C may not view A's location", outsider.body.trim() === "false", outsider.body);

@@ -97,18 +97,29 @@ try {
     p_device_label: "Android · Chrome", p_ip_hash: null,
   });
 
-  // Pair them. Attendance defaults on, location defaults off.
+  // Pair them. Since 0021 every switch starts on, so location is turned
+  // off explicitly below - which is the more meaningful test anyway: the
+  // question is whether flipping the switch actually withholds the data,
+  // not whether a default happens to be set the safe way.
   await rpc(A, "request_pairing", { target_email: emailB });
   const pending = await get(B, "pairs?select=id&status=eq.pending");
   await fetch(`${URL}/rest/v1/pairs?id=eq.${pending[0].id}`, {
     method: "PATCH", headers: B, body: JSON.stringify({ status: "accepted" }),
   });
 
-  console.log("\n1. Attendance shared, location NOT shared");
+  console.log("\n1. Attendance shared, location switched OFF");
   {
+    await fetch(`${URL}/rest/v1/pair_permissions?owner_id=eq.${idA}`, {
+      method: "PATCH", headers: A, body: JSON.stringify({ share_location: false }),
+    });
+
     const perms = (await rpc(B, "get_partner_permissions", { p_partner_id: idA })).body;
     check("permissions report attendance on, location off",
       perms?.attendance === true && perms?.location === false, JSON.stringify(perms));
+
+    // Photos travel with their own switch, not with attendance.
+    check("photos are reported separately",
+      typeof perms?.photos === "boolean", JSON.stringify(perms));
 
     const days = (await rpc(B, "get_partner_days", { p_partner_id: idA })).body;
     check("the partner can see the day", days.length === 1, JSON.stringify(days.length));

@@ -232,7 +232,16 @@ try {
 
   if (isAdmin.data?.role !== "admin") {
     // Promote for the duration; restored in the finally block.
-    await admin.from("profiles").update({ role: "admin" }).eq("id", userId);
+    //
+    // status is set too, not just role. is_admin() requires BOTH an admin
+    // role and an active account, and the admin E2E spec suspends this
+    // same account on purpose — an interrupted run leaves it suspended,
+    // and the symptom is every admin check here failing with 'not_admin'
+    // for a reason that has nothing to do with what is being tested.
+    await admin
+      .from("profiles")
+      .update({ role: "admin", status: "active" })
+      .eq("id", userId);
   }
 
   const adminClient = await signIn(USER, USER_PW);

@@ -190,16 +190,27 @@ try {
       method: "PATCH", headers: B, body: JSON.stringify({ status: "accepted" }),
     });
 
+    // Sharing starts on for every switch (0021), so a paired partner sees
+    // leave straight away. The assertion that carries weight is the one
+    // after it: turning the switch off has to stop the read there and then.
     const paired = await get(B, `leave_requests?select=id&user_id=eq.${idA}`);
-    check("pairing alone does not expose leave — the switch is off by default",
-      paired.length === 0, JSON.stringify(paired));
+    check("a paired partner sees leave, since sharing starts on",
+      paired.length > 0, JSON.stringify(paired));
+
+    await fetch(`${URL}/rest/v1/pair_permissions?owner_id=eq.${idA}`, {
+      method: "PATCH", headers: A, body: JSON.stringify({ share_leave: false }),
+    });
+
+    const hidden = await get(B, `leave_requests?select=id&user_id=eq.${idA}`);
+    check("switching leave sharing off hides it immediately",
+      hidden.length === 0, JSON.stringify(hidden));
 
     await fetch(`${URL}/rest/v1/pair_permissions?owner_id=eq.${idA}`, {
       method: "PATCH", headers: A, body: JSON.stringify({ share_leave: true }),
     });
 
     const shared = await get(B, `leave_requests?select=id&user_id=eq.${idA}`);
-    check("visible once leave sharing is turned on",
+    check("and switching it back on restores it",
       shared.length > 0, JSON.stringify(shared));
   }
 

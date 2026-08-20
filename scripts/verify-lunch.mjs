@@ -97,6 +97,10 @@ try {
   const [tA, tB] = await Promise.all([tokenFor(emailA), tokenFor(emailB)]);
   const A = hdr(tA), B = hdr(tB);
 
+  // The order changed in 0022: the clip is now recorded DURING lunch, not
+  // after it. Recorded afterwards it proved nothing about the stretch it was
+  // meant to cover, and a day could reach 'lunch_verified' with no clip at
+  // all -- which is what these checks now guard against.
   console.log("\n1. A proof cannot be attached to a day that had no lunch");
   {
     const noDay = await proof(A);
@@ -106,24 +110,28 @@ try {
     await event(A, "check_in");
     const afterCheckIn = await proof(A);
     check("refused when lunch never started",
-      afterCheckIn.body?.error === "lunch_not_finished", JSON.stringify(afterCheckIn.body));
-
-    await event(A, "lunch_start");
-    const midLunch = await proof(A);
-    check("refused while lunch is still running",
-      midLunch.body?.error === "lunch_not_finished", JSON.stringify(midLunch.body));
+      afterCheckIn.body?.error === "lunch_not_started", JSON.stringify(afterCheckIn.body));
   }
 
-  console.log("\n2. A finished lunch accepts exactly one proof");
+  console.log("\n2. Lunch cannot end until the clip exists");
   {
-    await event(A, "lunch_end");
+    await event(A, "lunch_start");
+
+    const tooEarly = await event(A, "lunch_end");
+    check("lunch_end is refused with no clip recorded",
+      tooEarly.body?.error === "lunch_proof_missing", JSON.stringify(tooEarly.body));
 
     const ok = await proof(A);
-    check("accepted once lunch has ended", ok.body?.ok === true, JSON.stringify(ok.body));
+    check("the clip is accepted while lunch is running",
+      ok.body?.ok === true, JSON.stringify(ok.body));
 
     const again = await proof(A);
-    check("a second proof for the same day is refused",
-      again.body?.error === "proof_already_recorded", JSON.stringify(again.body));
+    check("a second clip for the same day is refused",
+      again.body?.error === "lunch_proof_exists", JSON.stringify(again.body));
+
+    const ended = await event(A, "lunch_end");
+    check("lunch can end once the clip is there",
+      ended.body?.ok === true, JSON.stringify(ended.body));
   }
 
   console.log("\n3. The tables are not writable from a client");
@@ -136,7 +144,7 @@ try {
       direct.status >= 400, `status ${direct.status}`);
   }
 
-  console.log("\n4. Clips stay private until lunch proof is explicitly shared");
+  console.log("\n4. Lunch proof sharing can be switched off at any time");
   {
     const before = JSON.parse((await get(B, `lunch_proofs?select=id&user_id=eq.${idA}`)).body);
     check("an unpaired user sees nothing", before.length === 0, JSON.stringify(before));
@@ -147,18 +155,12 @@ try {
       method: "PATCH", headers: B, body: JSON.stringify({ status: "accepted" }),
     });
 
-    // Attendance is shared by default; lunch proof deliberately is not.
+    // Every switch is on from the moment a pair is accepted (0021), so the
+    // clip is visible straight away. The control that matters is the one
+    // below: switching it off has to stop the read immediately.
     const paired = JSON.parse((await get(B, `lunch_proofs?select=id&user_id=eq.${idA}`)).body);
-    check("pairing alone does not expose the clip — the switch is off by default",
-      paired.length === 0, JSON.stringify(paired));
-
-    await fetch(`${URL}/rest/v1/pair_permissions?owner_id=eq.${idA}`, {
-      method: "PATCH", headers: A, body: JSON.stringify({ share_lunch_proof: true }),
-    });
-
-    const shared = JSON.parse((await get(B, `lunch_proofs?select=id&user_id=eq.${idA}`)).body);
-    check("visible once the owner turns lunch proof sharing on",
-      shared.length === 1, JSON.stringify(shared));
+    check("a paired partner sees the clip, since sharing starts on",
+      paired.length === 1, JSON.stringify(paired));
 
     await fetch(`${URL}/rest/v1/pair_permissions?owner_id=eq.${idA}`, {
       method: "PATCH", headers: A, body: JSON.stringify({ share_lunch_proof: false }),
