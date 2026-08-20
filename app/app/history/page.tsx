@@ -7,6 +7,7 @@ import {
   getAttendanceHistory,
   getEventsForAttendance,
 } from "@/lib/attendance/queries";
+import { formatCalendarDate, formatTime } from "@/lib/format/datetime";
 import { cn } from "@/lib/utils";
 import type { AttendanceStatus } from "@/types/attendance";
 
@@ -27,13 +28,7 @@ export default async function HistoryPage() {
   const events = await getEventsForAttendance(days.map((d) => d.id));
 
   const time = (iso: string | null) =>
-    iso
-      ? new Intl.DateTimeFormat("en-GB", {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: profile.timezone,
-        }).format(new Date(iso))
-      : "—";
+    formatTime(iso, profile.timezone) ?? "—";
 
   return (
     <div className="space-y-5">
@@ -62,14 +57,7 @@ export default async function HistoryPage() {
             const dayEvents = events.filter((e) => e.attendance_id === day.id);
             const flagged = dayEvents.filter((e) => e.status !== "passed").length;
 
-            const date = new Intl.DateTimeFormat("en-GB", {
-              weekday: "short",
-              day: "numeric",
-              month: "short",
-              // The date column is a plain calendar date, so it must be read
-              // back as UTC — shifting it into a timezone moves the day.
-              timeZone: "UTC",
-            }).format(new Date(`${day.attendance_date}T00:00:00Z`));
+            const date = formatCalendarDate(day.attendance_date);
 
             return (
               <li key={day.id}>

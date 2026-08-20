@@ -1,8 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import {
+  REMEMBER_COOKIE,
+  rememberCookieOptions,
+} from "@/lib/auth/remember";
 import { getAppUrl } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -59,6 +64,16 @@ export async function login(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0].message };
   }
+
+  // Recorded before signing in, because the sign-in is what writes the auth
+  // cookies — and they need to already know whether to persist.
+  const remember = formData.get("remember") === "on";
+  const cookieStore = await cookies();
+  cookieStore.set(
+    REMEMBER_COOKIE,
+    remember ? "1" : "0",
+    rememberCookieOptions(remember),
+  );
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);

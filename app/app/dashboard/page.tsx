@@ -6,6 +6,7 @@ import {
 } from "@/components/attendance/today-card";
 import { requireProfile } from "@/lib/auth/session";
 import { getTodayAttendance } from "@/lib/attendance/queries";
+import { formatShortDate, getHour } from "@/lib/format/datetime";
 import { getTodayLunchProof } from "@/lib/lunch/queries";
 
 export const metadata: Metadata = {
@@ -28,19 +29,8 @@ export default async function DashboardPage() {
   // Rendered on the server, in the user's own timezone — the client clock
   // is never authoritative anywhere in LoveTrack.
   const now = new Date();
-  const hour = Number(
-    new Intl.DateTimeFormat("en-GB", {
-      hour: "numeric",
-      hour12: false,
-      timeZone: profile.timezone,
-    }).format(now),
-  );
-  const today = new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    timeZone: profile.timezone,
-  }).format(now);
+  const hour = getHour(profile.timezone, now);
+  const today = formatShortDate(now, profile.timezone);
 
   const firstName = profile.full_name?.split(" ")[0] ?? "there";
 

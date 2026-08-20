@@ -8,7 +8,7 @@ import { isActivePath, NAV_ITEMS } from "@/components/layout/nav-items";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -84,6 +84,13 @@ export function AppHeader({ profile }: { profile: Profile }) {
                 aria-label="Account menu"
               >
                 <Avatar className="size-8">
+                  {profile.avatar_url && (
+                    <AvatarImage
+                      src={profile.avatar_url}
+                      alt=""
+                      className="object-cover"
+                    />
+                  )}
                   <AvatarFallback className="bg-accent text-xs text-accent-foreground">
                     {initials(profile)}
                   </AvatarFallback>

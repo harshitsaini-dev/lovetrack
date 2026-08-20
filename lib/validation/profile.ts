@@ -34,6 +34,32 @@ export const profileSettingsSchema = z.object({
 
 export type ProfileSettingsInput = z.infer<typeof profileSettingsSchema>;
 
+/** Same strength rules as registration — one definition, one behaviour. */
+const strongPassword = z
+  .string()
+  .min(8, "Password kam se kam 8 characters ka ho")
+  .max(72, "Password 72 characters se lamba nahi ho sakta")
+  .regex(/[a-z]/, "Ek lowercase letter zaroori hai")
+  .regex(/[A-Z]/, "Ek uppercase letter zaroori hai")
+  .regex(/[0-9]/, "Ek number zaroori hai");
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password daalein"),
+    password: strongPassword,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Dono passwords match nahi kar rahe",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.password !== data.currentPassword, {
+    message: "Naya password purane se alag hona chahiye",
+    path: ["password"],
+  });
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 /** `checkbox` inputs are absent from FormData when unticked. */
 export function checkboxToBoolean(value: FormDataEntryValue | null): boolean {
   return value === "on" || value === "true";

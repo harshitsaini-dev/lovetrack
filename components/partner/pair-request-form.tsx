@@ -28,7 +28,11 @@ export function PairRequestForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
+        <CardTitle
+          role="heading"
+          aria-level={2}
+          className="flex items-center gap-2 text-base"
+        >
           <UserPlus className="size-4 text-primary" aria-hidden />
           Kisi ko pair karein
         </CardTitle>

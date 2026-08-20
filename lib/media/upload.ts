@@ -3,6 +3,7 @@ import type { AttendanceEventType } from "@/types/attendance";
 
 export const ATTENDANCE_BUCKET = "attendance-media";
 export const LUNCH_BUCKET = "lunch-proofs";
+export const AVATAR_BUCKET = "avatars";
 
 function datedPath(userId: string, name: string): string {
   const now = new Date();
@@ -36,6 +37,43 @@ export async function uploadAttendancePhoto(
   if (error) return null;
 
   return path;
+}
+
+/**
+ * Uploads a profile picture and returns its public URL.
+ *
+ * Overwrites the previous one at a fixed path rather than accumulating
+ * files, and appends a cache-busting query so the new face actually shows
+ * up instead of the CDN serving the old one.
+ *
+ * Unlike attendance media, this is a normal photo — picking an existing
+ * image is exactly what people expect here, so a file input is correct.
+ */
+export async function uploadAvatar(
+  userId: string,
+  blob: Blob,
+  mimeType: string,
+): Promise<string | null> {
+  const supabase = createClient();
+
+  const extension = mimeType.includes("png")
+    ? "png"
+    : mimeType.includes("webp")
+      ? "webp"
+      : "jpg";
+  const path = `${userId}/avatar.${extension}`;
+
+  const { error } = await supabase.storage
+    .from(AVATAR_BUCKET)
+    .upload(path, blob, { contentType: mimeType, upsert: true });
+
+  if (error) return null;
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+
+  return `${publicUrl}?v=${Date.now()}`;
 }
 
 /**

@@ -13,6 +13,7 @@ import {
 import { LocationMap } from "@/components/location/location-map";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatTime } from "@/lib/format/datetime";
 import { EVENT_LABELS } from "@/lib/attendance/messages";
 import { cn } from "@/lib/utils";
 import type {
@@ -21,14 +22,6 @@ import type {
   AttendanceEventType,
 } from "@/types/attendance";
 
-function formatTime(iso: string | null, timezone: string): string | null {
-  if (!iso) return null;
-  return new Intl.DateTimeFormat("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: timezone,
-  }).format(new Date(iso));
-}
 
 const STEPS: {
   type: AttendanceEventType;

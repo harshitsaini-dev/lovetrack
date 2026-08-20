@@ -1,3 +1,4 @@
+import { getTodayInTimezone } from "@/lib/format/datetime";
 import { createClient } from "@/lib/supabase/server";
 import type {
   Attendance,
@@ -22,10 +23,7 @@ export async function getTodayAttendance(timezone: string): Promise<{
     data: { user },
   } = await supabase.auth.getUser();
 
-  // en-CA gives ISO-shaped YYYY-MM-DD, which is what the date column wants.
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(
-    new Date(),
-  );
+  const today = getTodayInTimezone(timezone);
 
   if (!user) return { attendance: null, events: [], today };
 

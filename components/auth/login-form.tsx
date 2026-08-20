@@ -7,6 +7,7 @@ import Link from "next/link";
 import { FormMessage } from "@/components/auth/form-message";
 import { PasswordInput } from "@/components/auth/password-input";
 import { SubmitButton } from "@/components/auth/submit-button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login, type AuthFormState } from "@/lib/auth/actions";
@@ -70,6 +71,19 @@ export function LoginForm() {
           placeholder="••••••••"
           required
         />
+      </div>
+
+      <div className="flex items-center gap-2.5 pt-1">
+        {/*
+          Ticked by default, because that is what most people want on their
+          own phone. Unticking makes the auth cookie a session cookie, which
+          the browser drops on close — the point of the control on a shared
+          or borrowed device.
+        */}
+        <Checkbox id="remember" name="remember" defaultChecked />
+        <Label htmlFor="remember" className="text-sm font-normal">
+          Mujhe yaad rakhein
+        </Label>
       </div>
 
       <SubmitButton pendingLabel="Login ho raha hai...">Log in</SubmitButton>

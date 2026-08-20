@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 import type { AuthFormState } from "@/lib/auth/actions";
 import { createClient } from "@/lib/supabase/server";
 import {
+  changePasswordSchema,
   checkboxToBoolean,
   profileSettingsSchema,
 } from "@/lib/validation/profile";
@@ -64,4 +66,97 @@ export async function updateProfileSettings(
 
   revalidatePath("/app", "layout");
   return { ok: true, message: "Settings save ho gayin." };
+}
+
+/**
+ * Changes the signed-in user's password.
+ *
+ * The current password is re-checked even though the user is already
+ * authenticated: a session left open on an unattended device should not be
+ * enough to lock its owner out of their own account.
+ */
+export async function changePassword(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const parsed = changePasswordSchema.safeParse({
+    currentPassword: formData.get("currentPassword"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    return { ok: false, error: "Session expire ho gaya. Dobara login karein." };
+  }
+
+  const { error: reauthError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: parsed.data.currentPassword,
+  });
+
+  if (reauthError) {
+    return { ok: false, error: "Current password galat hai." };
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  });
+
+  if (error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("should be different")) {
+      return { ok: false, error: "Naya password purane se alag hona chahiye." };
+    }
+    return { ok: false, error: "Password badal nahi paya. Dobara try karein." };
+  }
+
+  return { ok: true, message: "Password badal diya gaya." };
+}
+
+/**
+ * Saves the path of a freshly uploaded avatar.
+ *
+ * The file itself goes straight from the browser to storage; this only
+ * records where it landed.
+ */
+export async function setAvatar(
+  avatarUrl: string | null,
+): Promise<AuthFormState> {
+  const parsed = z.string().url().max(500).nullable().safeParse(avatarUrl);
+
+  if (!parsed.success) {
+    return { ok: false, error: "Image save nahi ho payi." };
+  }
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: "Session expire ho gaya. Dobara login karein." };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_url: parsed.data })
+    .eq("id", user.id);
+
+  if (error) {
+    return { ok: false, error: "Image save nahi ho payi. Dobara try karein." };
+  }
+
+  revalidatePath("/app", "layout");
+  return { ok: true, message: parsed.data ? "Photo update ho gayi." : "Photo hata di gayi." };
 }

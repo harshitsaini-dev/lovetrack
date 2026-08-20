@@ -1,6 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import {
+  applyRememberPreference,
+  parseRemember,
+  REMEMBER_COOKIE,
+} from "@/lib/auth/remember";
+
 import type { Database } from "@/types/database";
 import { getSupabaseAnonKey, getSupabaseUrl } from "./env";
 
@@ -33,12 +39,22 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
+          // Honour "remember me" here too: this runs on every request, so
+          // a refresh must not turn a session cookie into a persistent one.
+          const remember = parseRemember(
+            request.cookies.get(REMEMBER_COOKIE)?.value,
+          );
+
           for (const { name, value } of cookiesToSet) {
             request.cookies.set(name, value);
           }
           response = NextResponse.next({ request });
           for (const { name, value, options } of cookiesToSet) {
-            response.cookies.set(name, value, options);
+            response.cookies.set(
+              name,
+              value,
+              applyRememberPreference(options, remember),
+            );
           }
         },
       },

@@ -39,7 +39,11 @@ export function SettingsForm({ profile }: { profile: Profile }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+          <CardTitle
+            role="heading"
+            aria-level={2}
+            className="flex items-center gap-2 text-base"
+          >
             <User className="size-4 text-primary" aria-hidden />
             Profile
           </CardTitle>
@@ -78,7 +82,11 @@ export function SettingsForm({ profile }: { profile: Profile }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+          <CardTitle
+            role="heading"
+            aria-level={2}
+            className="flex items-center gap-2 text-base"
+          >
             <Clock className="size-4 text-primary" aria-hidden />
             Reminder
           </CardTitle>
@@ -146,7 +154,11 @@ export function SettingsForm({ profile }: { profile: Profile }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+          <CardTitle
+            role="heading"
+            aria-level={2}
+            className="flex items-center gap-2 text-base"
+          >
             <Bell className="size-4 text-primary" aria-hidden />
             Activity emails
           </CardTitle>

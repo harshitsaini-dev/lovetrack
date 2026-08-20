@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import { InstallButton } from "@/components/layout/install-button";
+import { AvatarPicker } from "@/components/settings/avatar-picker";
+import { PasswordForm } from "@/components/settings/password-form";
 import { SettingsForm } from "@/components/settings/settings-form";
 import { requireProfile } from "@/lib/auth/session";
 
@@ -20,7 +22,11 @@ export default async function SettingsPage() {
         </p>
       </header>
 
+      <AvatarPicker profile={profile} />
+
       <SettingsForm profile={profile} />
+
+      <PasswordForm />
 
       <div className="border-t pt-5">
         <InstallButton className="w-full" hideWhenUnavailable />

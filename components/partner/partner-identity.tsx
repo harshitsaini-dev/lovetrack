@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Profile } from "@/types/database";
 
 type PartnerLike = Pick<Profile, "id" | "full_name" | "email" | "avatar_url">;
@@ -18,6 +18,13 @@ export function PartnerIdentity({ partner }: { partner: PartnerLike }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
       <Avatar className="size-10 shrink-0">
+        {partner.avatar_url && (
+          <AvatarImage
+            src={partner.avatar_url}
+            alt=""
+            className="object-cover"
+          />
+        )}
         <AvatarFallback className="bg-accent text-xs text-accent-foreground">
           {initials(partner)}
         </AvatarFallback>

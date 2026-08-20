@@ -1,6 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+import {
+  applyRememberPreference,
+  parseRemember,
+  REMEMBER_COOKIE,
+} from "@/lib/auth/remember";
+
 import type { Database } from "@/types/database";
 import {
   getSupabaseAnonKey,
@@ -21,13 +27,22 @@ export async function createClient() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
+        // If the user did not tick "remember me", auth cookies must stay
+        // session cookies — including on refresh, or a long-lived session
+        // would quietly reappear on a shared device.
+        const remember = parseRemember(cookieStore.get(REMEMBER_COOKIE)?.value);
+
         try {
           for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options);
+            cookieStore.set(
+              name,
+              value,
+              applyRememberPreference(options, remember),
+            );
           }
         } catch {
           // Called from a Server Component, where cookies are read-only.
-          // Session refresh is handled by middleware, so this is safe to ignore.
+          // Session refresh is handled by the proxy, so this is safe to ignore.
         }
       },
     },
