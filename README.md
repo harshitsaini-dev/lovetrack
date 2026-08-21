@@ -342,4 +342,13 @@ Full guide, including the DMARC roadmap:
 
 ## License
 
-Private project.
+[MIT](./LICENSE) © 2026 Harshit Saini
+
+You are free to use, modify and redistribute this code, including commercially,
+as long as the copyright notice and licence text travel with it. It comes with
+no warranty.
+
+**What the licence does not cover:** the running instance at
+`lovetrack.harshitsaini.in` and the data in it. If you want to run this, deploy
+your own — the attendance records, photographs and lunch clips in the live
+database belong to the people who created them, not to whoever forks the repo.
