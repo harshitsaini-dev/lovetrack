@@ -60,3 +60,9 @@ AGENTS.md
 
 # playwright browsers/state
 test-results/
+
+# portfolio cover / icon / gallery renders
+# These get uploaded to the portfolio CMS and served from its object storage.
+# Committing them too would leave two copies of the same picture with no way
+# to tell which one the site is actually showing.
+/covers/
