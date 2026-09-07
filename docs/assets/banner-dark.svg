@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-label="LoveTrack — see when your friends start work, break for lunch, and head home">
+  <defs>
+    <radialGradient id="glow" cx="0.12" cy="0.1" r="0.85">
+      <stop offset="0%" stop-color="#f45d77" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#f45d77" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.95" cy="1" r="0.7">
+      <stop offset="0%" stop-color="#f45d77" stop-opacity="0.08800000000000001"/>
+      <stop offset="100%" stop-color="#f45d77" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="420" fill="#0e090f"/>
+  <rect width="1200" height="420" fill="url(#glow)"/>
+  <rect width="1200" height="420" fill="url(#glow2)"/>
+
+  <!-- consent badge: the first thing the product says about itself -->
+  <rect x="64" y="70" width="268" height="32" rx="16" fill="#3c3150"/>
+  <text x="84" y="91" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600"
+        fill="#f45d77">&#9679;</text>
+  <text x="100" y="91" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600"
+        fill="#f6f0f3">Both sides agree. Nothing hidden.</text>
+
+  <!-- wordmark -->
+  <g transform="translate(64,132) scale(2.05)">
+    <path d="M12 21s-7.5-4.7-9.5-9.1C1 8.6 2.6 5 6.2 5c2 0 3.4 1.1 4.3 2.3l1.5 2 1.5-2C14.4 6.1 15.8 5 17.8 5c3.6 0 5.2 3.6 3.7 6.9C19.5 16.3 12 21 12 21z" fill="#f45d77"/>
+  </g>
+  <text x="122" y="176" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="58" font-weight="700"
+        letter-spacing="-1.6" fill="#f6f0f3">Love<tspan fill="#f45d77">Track</tspan></text>
+
+  <text x="64" y="228" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="21" fill="#aca0ab">See when your friends start work, break for</text>
+  <text x="64" y="258" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="21" fill="#aca0ab">lunch, and head home.</text>
+
+  <text x="64" y="312" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#aca0ab">Live photo and the location it was made from, on</text>
+  <text x="64" y="336" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#aca0ab">every entry. No tracking in between.</text>
+
+  <!-- the day, as the app actually shows it -->
+  <rect x="700" y="64" width="436" height="292" rx="18"
+        fill="#19141b" stroke="#ffffff" stroke-opacity="0.12"/>
+  <text x="724" y="98" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14"
+        font-weight="600" fill="#aca0ab" letter-spacing="0.6">AAJ KA DIN</text>
+  
+      <line x1="734" y1="132" x2="734" y2="166"
+                   stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+      <circle cx="734" cy="126" r="7" fill="#5ac576"/>
+      <circle cx="734" cy="126" r="13" fill="#5ac576" opacity="0.16"/>
+      <text x="760" y="131" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16"
+            font-weight="500" fill="#f6f0f3">Check-in</text>
+      
+      <text x="1112" y="131" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15"
+            fill="#aca0ab" text-anchor="end">09:12 am</text>
+      <line x1="734" y1="178" x2="734" y2="212"
+                   stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+      <circle cx="734" cy="172" r="7" fill="#fba952"/>
+      <circle cx="734" cy="172" r="13" fill="#fba952" opacity="0.16"/>
+      <text x="760" y="177" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16"
+            font-weight="500" fill="#f6f0f3">Lunch in</text>
+      
+      <text x="1112" y="177" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15"
+            fill="#aca0ab" text-anchor="end">01:30 pm</text>
+      <line x1="734" y1="224" x2="734" y2="258"
+                   stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+      <circle cx="734" cy="218" r="7" fill="#fba952"/>
+      <circle cx="734" cy="218" r="13" fill="#fba952" opacity="0.16"/>
+      <text x="760" y="223" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16"
+            font-weight="600" fill="#f6f0f3">Lunch verify</text>
+      <rect x="872" y="207" width="46" height="22" rx="7"
+                   fill="#f45d77" opacity="0.16"/>
+             <text x="895" y="222" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11"
+                   font-weight="600" fill="#f45d77" text-anchor="middle">clip</text>
+      <text x="1112" y="223" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15"
+            fill="#aca0ab" text-anchor="end">01:34 pm</text>
+      <line x1="734" y1="270" x2="734" y2="304"
+                   stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+      <circle cx="734" cy="264" r="7" fill="#fba952"/>
+      <circle cx="734" cy="264" r="13" fill="#fba952" opacity="0.16"/>
+      <text x="760" y="269" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16"
+            font-weight="500" fill="#f6f0f3">Lunch out</text>
+      
+      <text x="1112" y="269" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15"
+            fill="#aca0ab" text-anchor="end">02:05 pm</text>
+      
+      <circle cx="734" cy="310" r="7" fill="#5ac576"/>
+      <circle cx="734" cy="310" r="13" fill="#5ac576" opacity="0.16"/>
+      <text x="760" y="315" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16"
+            font-weight="500" fill="#f6f0f3">Check-out</text>
+      
+      <text x="1112" y="315" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15"
+            fill="#aca0ab" text-anchor="end">06:40 pm</text>
+
+  <text x="64" y="392" font-family="'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#aca0ab">
+    Next.js 16  ·  Supabase  ·  Vercel  ·  MIT
+  </text>
+</svg>

@@ -1,4 +1,17 @@
-# ❤️ LoveTrack
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner-light.png">
+  <img alt="LoveTrack — see when your friends start work, break for lunch, and head home" src="docs/assets/banner-dark.png">
+</picture>
+
+<p align="center">
+  <a href="https://lovetrack.harshitsaini.in"><img alt="Live" src="https://img.shields.io/badge/live-lovetrack.harshitsaini.in-de4966?style=flat-square"></a>
+  <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000?style=flat-square&logo=nextdotjs">
+  <img alt="Supabase" src="https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ECF8E?style=flat-square&logo=supabase&logoColor=white">
+  <a href="./LICENSE"><img alt="MIT" src="https://img.shields.io/badge/licence-MIT-6b4453?style=flat-square"></a>
+</p>
+
+---
 
 **See when your friends start work, break for lunch, and head home.**
 
@@ -116,7 +129,7 @@ npm run lint             # ESLint
 npm run typecheck        # tsc --noEmit
 npm run test             # Vitest — pure logic (time, validation, CSP, prompts)
 npm run check            # typecheck + lint + unit tests + build, in order
-npm run verify:all       # 208 adversarial checks against the real database
+npm run verify:all       # 224 adversarial checks against the real database
 npm run test:e2e         # Playwright — opens a real browser you can watch
 npm run test:e2e:mobile  # phone viewport only
 npm run test:e2e:ui      # Playwright's interactive UI mode
@@ -148,9 +161,18 @@ different kind of bug:
 | **Verify scripts** (`scripts/verify-*.mjs`) | Supabase directly, adversarially — "can a partner read someone else's data?" | RLS holes, `SECURITY DEFINER` leaks, rate-limit bypasses |
 | **Playwright** (`tests/e2e/`) | A real browser, phone viewport, fake camera | UI that silently drops correct data |
 
-All three are necessary. The RLS scripts were once 21/21 green while the
+As of the last full run: **73 unit**, **224 database**, **105 E2E** — all
+green, across 24 migrations.
+
+All three layers are necessary. The RLS scripts were once 21/21 green while the
 partner page was quietly dropping every pair — only the E2E run caught it. It
 has also gone the other way.
+
+The header checks in `verify:hardening` need a running app. They default to
+`http://localhost:3000`, confirm it is actually LoveTrack before asserting
+anything, and skip with a message if it is not — port 3000 is the Next.js
+default and is regularly held by a different project. Point them elsewhere with
+`E2E_BASE_URL`.
 
 The E2E suite runs on **one worker, always**. It drives a handful of shared
 real accounts, and `profile.spec` changes the test user's name and password

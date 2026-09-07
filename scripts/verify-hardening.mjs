@@ -17,7 +17,9 @@ for (const line of readFileSync(".env.local", "utf8").split(/\r?\n/)) {
 const URL = env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SVC = env.SUPABASE_SERVICE_ROLE_KEY;
-const APP = "http://localhost:3000";
+// Overridable, because port 3000 is not reserved. On a machine running more
+// than one Next.js project, whichever dev server started first owns it.
+const APP = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 
 const admin = { apikey: SVC, Authorization: `Bearer ${SVC}`, "Content-Type": "application/json" };
 
@@ -121,8 +123,29 @@ try {
     try {
       res = await fetch(`${APP}/login`, { redirect: "manual" });
     } catch {
-      console.log("  SKIP  dev server not running on :3000");
+      console.log(`  SKIP  nothing serving ${APP}`);
       res = null;
+    }
+
+    /*
+     * Confirm it is actually LoveTrack before asserting anything about its
+     * headers.
+     *
+     * Port 3000 is the Next.js default, so on a machine with several
+     * projects it is regularly held by a different app. Without this check
+     * the script reports five confident security failures about somebody
+     * else's server -- which is worse than reporting nothing, because it
+     * sends you looking for a regression that does not exist. That happened.
+     */
+    if (res) {
+      const body = await res.clone().text().catch(() => "");
+      if (!body.includes("LoveTrack")) {
+        console.log(
+          `  SKIP  ${APP} is serving something else, not LoveTrack.` +
+            "\n        Start this project's dev server, or set E2E_BASE_URL.",
+        );
+        res = null;
+      }
     }
 
     if (res) {

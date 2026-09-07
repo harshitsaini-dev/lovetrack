@@ -29,7 +29,7 @@ Last updated: 2026-08-20
 |---|---|
 | `npm run check` (typecheck + lint + unit + build) | âœ… exit 0 |
 | Vitest unit tests | **73/73** |
-| `npm run verify:all` â€” database-level, adversarial | **222/222** |
+| `npm run verify:all` â€” database-level, adversarial | **224/224** |
 | Playwright E2E (mobile-first, headed) | **105/105** |
 
 ### Media, map links aur lunch order (20 Aug 2026)
